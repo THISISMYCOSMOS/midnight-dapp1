@@ -572,6 +572,10 @@ DApp Connector 패턴을 따라 Lace가 거래를 balance/submit하는 `/deploy`
 - 운영자 배포용 임시 private state는 메모리에서만 만들며 자격 Merkle 트리에 넣지 않는다
 - 실제 Lace 승인·배포·거래는 아직 검증하지 않았으므로 완료로 표시하지 않는다
 
+2026-07-23 Chrome에서 `/deploy` 렌더는 확인했지만 `window.midnight`가 없어 Lace 확장이
+설치되지 않은 상태였다. 공식 Chrome Web Store의 Lace 페이지까지만 열었고,
+확장 설치·지갑 생성/복구·Preprod 설정·승인은 사용자 조작이 필요하다.
+
 ---
 
 ## 7. 출처
