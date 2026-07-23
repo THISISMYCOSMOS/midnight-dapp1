@@ -1,0 +1,48 @@
+pragma language_version 0.23;
+
+import CompactStandardLibrary;
+
+export ledger eligible: MerkleTree<10, Bytes<32>>;
+export ledger nullifiers: Set<Bytes<32>>;
+export ledger reviews: List<Opaque<"string">>;
+
+witness localSecretKey(): Bytes<32>;
+witness findEligibilityPath(pk: Bytes<32>): MerkleTreePath<10, Bytes<32>>;
+
+constructor(initialEligible: Vector<3, Bytes<32>>) {
+  eligible.insert(disclose(initialEligible[0]));
+  eligible.insert(disclose(initialEligible[1]));
+  eligible.insert(disclose(initialEligible[2]));
+}
+
+export circuit deriveReviewerKey(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([
+    pad(32, "review:pk:v1"),
+    sk,
+  ]);
+}
+
+export circuit deriveNullifier(sk: Bytes<32>, itemId: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([
+    pad(32, "review:null:v1"),
+    itemId,
+    sk,
+  ]);
+}
+
+export circuit submitReview(itemId: Bytes<32>, body: Opaque<"string">): [] {
+  const sk = localSecretKey();
+  const reviewerKey = deriveReviewerKey(sk);
+  const path = findEligibilityPath(reviewerKey);
+
+  assert(reviewerKey == path.leaf, "Invalid eligibility path");
+  assert(
+    eligible.checkRoot(disclose(merkleTreePathRoot<10, Bytes<32>>(path))),
+    "Reviewer is not eligible"
+  );
+
+  const nullifier = disclose(deriveNullifier(sk, itemId));
+  assert(!nullifiers.member(nullifier), "Review already submitted for this item");
+  nullifiers.insert(nullifier);
+  reviews.pushFront(disclose(body));
+}

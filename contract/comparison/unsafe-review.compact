@@ -1,0 +1,16 @@
+pragma language_version 0.23;
+
+import CompactStandardLibrary;
+
+// Intentionally unsafe comparison baseline. Never deploy as the final contract.
+export ledger admin: ZswapCoinPublicKey;
+export ledger reviews: List<Opaque<"string">>;
+
+constructor() {
+  admin = ownPublicKey();
+}
+
+export circuit submitReview(body: Opaque<"string">): [] {
+  assert(ownPublicKey() == admin, "Only the registered reviewer can submit");
+  reviews.pushFront(disclose(body));
+}

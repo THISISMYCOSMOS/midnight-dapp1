@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>익명 리뷰 — 화면 목업</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #FFFFFF; }
+  * { box-sizing: border-box; }
+  textarea { font-family: inherit; }
+</style>
+</head>
+<body>
+<div style="min-height:100vh;background:#FFFFFF;font-family:-apple-system,'Segoe UI','Noto Sans KR',sans-serif;color:#1A1A1A;padding:32px 16px 64px;display:flex;flex-direction:column;align-items:center;gap:32px;">
+
+  <!-- ============ A-1 ============ -->
+  <div style="width:100%;max-width:640px;display:flex;flex-direction:column;gap:16px;">
+    <div style="font-size:13px;font-weight:400;line-height:1.5;color:#A0A0A0;">A-1 리뷰 목록</div>
+    <div style="width:100%;border-top:1px solid #E5E5E5;padding-top:32px;">
+      <h1 style="margin:0;font-size:32px;font-weight:600;line-height:1.25;">무선 이어폰 XR-200</h1>
+      <div style="margin-top:32px;display:flex;flex-direction:column;">
+        <div style="border-top:1px solid #E5E5E5;padding:16px 0;">
+          <div style="font-size:15px;font-weight:400;line-height:1.6;">배터리가 광고보다 오래갑니다. 하루 종일 써도 저녁까지 남습니다. 케이스 여닫는 감은 조금 헐겁습니다.</div>
+          <div style="margin-top:8px;font-size:13px;font-weight:400;line-height:1.5;color:#6B6B6B;">2026년 7월 18일</div>
+        </div>
+        <div style="border-top:1px solid #E5E5E5;padding:16px 0;">
+          <div style="font-size:15px;font-weight:400;line-height:1.6;">노이즈 캔슬링은 지하철에서 확실히 체감됩니다. 다만 통화 품질은 평범합니다.</div>
+          <div style="margin-top:8px;font-size:13px;font-weight:400;line-height:1.5;color:#6B6B6B;">2026년 7월 15일</div>
+        </div>
+        <div style="border-top:1px solid #E5E5E5;padding:16px 0;">
+          <div style="font-size:15px;font-weight:400;line-height:1.6;">귀에 오래 착용하면 눌리는 느낌이 있습니다. 폼팁을 바꾸니 나아졌습니다.</div>
+          <div style="margin-top:8px;font-size:13px;font-weight:400;line-height:1.5;color:#6B6B6B;">2026년 7월 11일</div>
+        </div>
+        <div style="border-top:1px solid #E5E5E5;border-bottom:1px solid #E5E5E5;padding:16px 0;">
+          <div style="font-size:15px;font-weight:400;line-height:1.6;">연결은 빠르고 끊김이 없습니다. 앱에서 이퀄라이저를 조정할 수 있어서 좋습니다.</div>
+          <div style="margin-top:8px;font-size:13px;font-weight:400;line-height:1.5;color:#6B6B6B;">2026년 7월 9일</div>
+        </div>
+      </div>
+      <button style="margin-top:16px;height:40px;padding:0 16px;border:none;border-radius:4px;background:#1A1A1A;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:400;line-height:1.6;cursor:pointer;">리뷰 쓰기</button>
+    </div>
+  </div>
+
+  <!-- ============ A-2 ============ -->
+  <div style="width:100%;max-width:640px;display:flex;flex-direction:column;gap:16px;">
+    <div style="font-size:13px;font-weight:400;line-height:1.5;color:#A0A0A0;">A-2 리뷰 목록 · 리뷰 없음</div>
+    <div style="width:100%;border-top:1px solid #E5E5E5;padding-top:32px;">
+      <h1 style="margin:0;font-size:32px;font-weight:600;line-height:1.25;">무선 이어폰 XR-200</h1>
+      <div style="margin-top:32px;border-top:1px solid #E5E5E5;padding:32px 0;">
+        <div style="font-size:15px;font-weight:400;line-height:1.6;color:#6B6B6B;">아직 리뷰가 없습니다</div>
+      </div>
+      <button style="height:40px;padding:0 16px;border:none;border-radius:4px;background:#1A1A1A;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:400;line-height:1.6;cursor:pointer;">리뷰 쓰기</button>
+    </div>
+  </div>
+
+  <!-- ============ B-1 ============ -->
+  <div style="width:100%;max-width:640px;display:flex;flex-direction:column;gap:16px;">
+    <div style="font-size:13px;font-weight:400;line-height:1.5;color:#A0A0A0;">B-1 리뷰 작성 · 지갑 미연결</div>
+    <div style="width:100%;border-top:1px solid #E5E5E5;padding-top:32px;">
+      <h1 style="margin:0;font-size:32px;font-weight:600;line-height:1.25;">리뷰 쓰기</h1>
+      <textarea disabled placeholder="" style="margin-top:16px;width:100%;height:120px;padding:8px;border:1px solid #E5E5E5;border-radius:4px;background:#FFFFFF;color:#A0A0A0;font-size:15px;font-weight:400;line-height:1.6;resize:none;"></textarea>
+      <div style="margin-top:8px;font-size:13px;font-weight:400;line-height:1.5;color:#6B6B6B;">리뷰를 쓰려면 지갑을 연결해야 합니다</div>
+      <button style="margin-top:16px;height:40px;padding:0 16px;border:none;border-radius:4px;background:#1A1A1A;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:400;line-height:1.6;cursor:pointer;">지갑 연결</button>
+    </div>
+  </div>
+
+  <!-- ============ B-2 ============ -->
+  <div style="width:100%;max-width:640px;display:flex;flex-direction:column;gap:16px;">
+    <div style="font-size:13px;font-weight:400;line-height:1.5;color:#A0A0A0;">B-2 리뷰 작성 · 자격 없음</div>
+    <div style="width:100%;border-top:1px solid #E5E5E5;padding-top:32px;">
+      <h1 style="margin:0;font-size:32px;font-weight:600;line-height:1.25;">리뷰 쓰기</h1>
+      <textarea disabled style="margin-top:16px;width:100%;height:120px;padding:8px;border:1px solid #E5E5E5;border-radius:4px;background:#FFFFFF;color:#A0A0A0;font-size:15px;font-weight:400;line-height:1.6;resize:none;"></textarea>
+      <div style="margin-top:8px;font-size:13px;font-weight:400;line-height:1.5;color:#6B6B6B;">리뷰는 구매 확인된 분만 쓸 수 있습니다</div>
+      <button disabled style="margin-top:16px;height:40px;padding:0 16px;border:none;border-radius:4px;background:#A0A0A0;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:400;line-height:1.6;cursor:default;">제출</button>
+    </div>
+  </div>
+
+  <!-- ============ B-3 ============ -->
+  <div style="width:100%;max-width:640px;display:flex;flex-direction:column;gap:16px;">
+    <div style="font-size:13px;font-weight:400;line-height:1.5;color:#A0A0A0;">B-3 리뷰 작성 · 이미 작성함</div>
+    <div style="width:100%;border-top:1px solid #E5E5E5;padding-top:32px;">
+      <h1 style="margin:0;font-size:32px;font-weight:600;line-height:1.25;">리뷰 쓰기</h1>
+      <textarea disabled style="margin-top:16px;width:100%;height:120px;padding:8px;border:1px solid #E5E5E5;border-radius:4px;background:#FFFFFF;color:#A0A0A0;font-size:15px;font-weight:400;line-height:1.6;resize:none;"></textarea>
+      <div style="margin-top:8px;font-size:13px;font-weight:400;line-height:1.5;color:#6B6B6B;">이 상품에는 이미 리뷰를 남기셨습니다</div>
+      <button disabled style="margin-top:16px;height:40px;padding:0 16px;border:none;border-radius:4px;background:#A0A0A0;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:400;line-height:1.6;cursor:default;">제출</button>
+    </div>
+  </div>
+
+  <!-- ============ B-4 ============ -->
+  <div style="width:100%;max-width:640px;display:flex;flex-direction:column;gap:16px;">
+    <div style="font-size:13px;font-weight:400;line-height:1.5;color:#A0A0A0;">B-4 리뷰 작성 · 작성 가능</div>
+    <div style="width:100%;border-top:1px solid #E5E5E5;padding-top:32px;">
+      <h1 style="margin:0;font-size:32px;font-weight:600;line-height:1.25;">리뷰 쓰기</h1>
+      <textarea style="margin-top:16px;width:100%;height:120px;padding:8px;border:1px solid #1A1A1A;border-radius:4px;background:#FFFFFF;color:#1A1A1A;font-size:15px;font-weight:400;line-height:1.6;resize:none;">한 달 정도 썼습니다. 음질은 가격대에서 기대한 만큼이고, 저음이 과하지 않아 오래 들어도 피곤하지 않습니다.
+
+배터리는 만족스럽고 충전 케이스도 가볍습니다.</textarea>
+      <button style="margin-top:16px;height:40px;padding:0 16px;border:none;border-radius:4px;background:#1A1A1A;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:400;line-height:1.6;cursor:pointer;">제출</button>
+    </div>
+  </div>
+
+  <!-- ============ C-1 ============ -->
+  <div style="width:100%;max-width:640px;display:flex;flex-direction:column;gap:16px;">
+    <div style="font-size:13px;font-weight:400;line-height:1.5;color:#A0A0A0;">C-1 제출 진행 · 증명 생성 중</div>
+    <div style="width:100%;border-top:1px solid #E5E5E5;padding-top:32px;">
+      <h1 style="margin:0;font-size:32px;font-weight:600;line-height:1.25;">제출 중</h1>
+      <div style="margin-top:16px;padding:8px;border:1px solid #E5E5E5;border-radius:4px;font-size:15px;font-weight:400;line-height:1.6;color:#6B6B6B;white-space:pre-wrap;">한 달 정도 썼습니다. 음질은 가격대에서 기대한 만큼이고, 저음이 과하지 않아 오래 들어도 피곤하지 않습니다.
+
+배터리는 만족스럽고 충전 케이스도 가볍습니다.</div>
+      <div style="margin-top:32px;display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid #E5E5E5;padding:16px 0;">
+          <div style="font-size:15px;font-weight:400;line-height:1.6;">자격 확인</div>
+          <div style="font-size:13px;font-weight:400;line-height:1.5;color:#6B6B6B;">완료</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid #E5E5E5;padding:16px 0;">
+          <div style="font-size:15px;font-weight:400;line-height:1.6;color:#2F6F5E;">증명 생성</div>
+          <div style="font-size:13px;font-weight:400;line-height:1.5;color:#2F6F5E;">진행 중 · <span id="elapsed">12</span>초</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid #E5E5E5;border-bottom:1px solid #E5E5E5;padding:16px 0;">
+          <div style="font-size:15px;font-weight:400;line-height:1.6;color:#A0A0A0;">트랜잭션 전송</div>
+          <div style="font-size:13px;font-weight:400;line-height:1.5;color:#A0A0A0;">대기</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ C-2 ============ -->
+  <div style="width:100%;max-width:640px;display:flex;flex-direction:column;gap:16px;">
+    <div style="font-size:13px;font-weight:400;line-height:1.5;color:#A0A0A0;">C-2 제출 완료</div>
+    <div style="width:100%;border-top:1px solid #E5E5E5;padding-top:32px;">
+      <h1 style="margin:0;font-size:32px;font-weight:600;line-height:1.25;">제출되었습니다</h1>
+      <div style="margin-top:16px;border-top:1px solid #E5E5E5;padding-top:16px;font-size:15px;font-weight:400;line-height:1.6;white-space:pre-wrap;">한 달 정도 썼습니다. 음질은 가격대에서 기대한 만큼이고, 저음이 과하지 않아 오래 들어도 피곤하지 않습니다.
+
+배터리는 만족스럽고 충전 케이스도 가볍습니다.</div>
+      <div style="margin-top:16px;font-size:13px;font-weight:400;line-height:1.5;color:#6B6B6B;">이 화면을 벗어나면 어느 리뷰가 내 것인지 확인할 수 없습니다</div>
+      <button style="margin-top:32px;height:40px;padding:0 16px;border:1px solid #1A1A1A;border-radius:4px;background:#FFFFFF;color:#1A1A1A;font-family:inherit;font-size:15px;font-weight:400;line-height:1.6;cursor:pointer;">목록으로</button>
+    </div>
+  </div>
+
+</div>
+<script>
+  (function(){
+    var e = 12, el = document.getElementById('elapsed');
+    setInterval(function(){ e++; if(el) el.textContent = e; }, 1000);
+  })();
+</script>
+</body>
+</html>

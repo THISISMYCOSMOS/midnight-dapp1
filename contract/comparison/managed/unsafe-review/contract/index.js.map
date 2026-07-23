@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "file": "index.js",
+  "sourceRoot": "../../../../",
+  "sources": ["comparison/unsafe-review.compact", "compiler/standard-library.compact"],
+  "names": [],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAQA;;;;;;;;;;MAIA,AAAA,YAGC;;;;;cAH2B,MAAsB;;;;;;;;;;;yCAAtB,MAAsB;;;;;;;yEAAtB,MAAsB;;;OAGjD;;;;GALA;EAFD;;;;;;;;;;;;;;;;;;;;;;;;;;;IAHA;;;;;;;;;yEAAwC;IACxC;;;;;;;;;;;yEAA8C;UAG5C,KAAK;IAAL;;;;;;;2HAAA,KAAK;;yEAAA;;;;;;;GACN;ECVD,AAAA;;;;;;;;EDYA,AAAA,eAGC,4BAH2B,MAAsB;;;kEACvB;;;;;;;;;;;uIAAK;;IAC9B;;;;;;;;;;;;;;;;;;;wIAA2B,MAAI;;;;;;;;;;;;;;wEAAxB;;GACR;;;;;;;;;;;;;;;;;;;;;;;;IAVD;qCAAA;;;;;;;;;;;0GAAwC;KAAA;IACxC;;;;;uCAAA;;;;;;;;;;;;;;;;;;;;;;4GAA8C;;;;;;uCAA9C;;;;;;;;;;;;;;;;;4GAA8C;;;;;;uCAA9C;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;4GAA8C;;;;;;;;;KAAA;;;;;;;;;;"
+}
