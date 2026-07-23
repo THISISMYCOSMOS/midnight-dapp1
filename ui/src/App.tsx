@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Subscription } from "rxjs";
-import { loadOrCreateBrowserSecret } from "./browser-secret";
+import {
+  loadOrCreateBrowserSecret,
+  reviewerEnrollmentScope,
+} from "./browser-secret";
 import { appConfig } from "./config";
 import {
   connectReviewApi,
@@ -122,7 +125,10 @@ export const App = () => {
           indexerWsUri: appConfig.indexerWsUri,
           itemId: appConfig.itemId,
         },
-        loadOrCreateBrowserSecret(appConfig.contractAddress),
+        loadOrCreateBrowserSecret(
+          appConfig.contractAddress,
+          reviewerEnrollmentScope(appConfig.networkId, appConfig.itemId),
+        ),
       );
       apiRef.current = api;
       authorSubscription.current?.unsubscribe();

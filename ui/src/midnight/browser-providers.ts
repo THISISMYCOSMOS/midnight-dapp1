@@ -39,6 +39,11 @@ export type BrowserConnectionConfig = {
   readonly itemId: Uint8Array;
 };
 
+export type BrowserDeploymentConfig = Omit<
+  BrowserConnectionConfig,
+  "contractAddress"
+>;
+
 export const createPublicDataProvider = (
   indexerUri: string,
   indexerWsUri: string,
@@ -83,10 +88,9 @@ const connectToWallet = async (networkId: string): Promise<ConnectedAPI> => {
   return connection;
 };
 
-export const connectReviewApi = async (
-  config: BrowserConnectionConfig,
-  secretKey: Uint8Array,
-): Promise<ReviewApi> => {
+const connectReviewProviders = async (
+  config: BrowserDeploymentConfig,
+): Promise<ReviewProviders> => {
   const connectedApi = await connectToWallet(config.networkId);
   const walletConfig = await connectedApi.getConfiguration();
   if (!walletConfig.proverServerUri) {
@@ -102,7 +106,7 @@ export const connectReviewApi = async (
     ReviewPrivateState
   >();
 
-  const providers: ReviewProviders = {
+  return {
     privateStateProvider,
     zkConfigProvider,
     proofProvider: httpClientProofProvider(
@@ -140,11 +144,33 @@ export const connectReviewApi = async (
       },
     },
   };
+};
 
+export const connectReviewApi = async (
+  config: BrowserConnectionConfig,
+  secretKey: Uint8Array,
+): Promise<ReviewApi> => {
+  const providers = await connectReviewProviders(config);
   return ReviewApi.join(
     providers,
     config.contractAddress,
     secretKey,
+    config.itemId,
+  );
+};
+
+export const deployReviewApi = async (
+  config: BrowserDeploymentConfig,
+  initialEligible: readonly Uint8Array[],
+): Promise<ReviewApi> => {
+  const providers = await connectReviewProviders(config);
+  const deploymentPrivateStateSecret = crypto.getRandomValues(
+    new Uint8Array(32),
+  );
+  return ReviewApi.deploy(
+    providers,
+    initialEligible,
+    deploymentPrivateStateSecret,
     config.itemId,
   );
 };

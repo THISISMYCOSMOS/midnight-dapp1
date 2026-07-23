@@ -29,11 +29,25 @@ export const consumeImportedBrowserSecret = (contractScope: string): void => {
 
 export const loadOrCreateBrowserSecret = (
   contractScope: string,
+  fallbackScope?: string,
 ): Uint8Array => {
   const stored = localStorage.getItem(storageKey(contractScope));
   if (validSecret(stored)) return fromHex(stored);
+
+  if (fallbackScope) {
+    const fallback = localStorage.getItem(storageKey(fallbackScope));
+    if (validSecret(fallback)) {
+      localStorage.setItem(storageKey(contractScope), fallback.toLowerCase());
+      return fromHex(fallback);
+    }
+  }
 
   const generated = crypto.getRandomValues(new Uint8Array(32));
   localStorage.setItem(storageKey(contractScope), toHex(generated));
   return generated;
 };
+
+export const reviewerEnrollmentScope = (
+  networkId: string,
+  itemId: Uint8Array,
+): string => `enrollment:${networkId}:${toHex(itemId)}`;

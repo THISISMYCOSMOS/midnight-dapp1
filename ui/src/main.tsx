@@ -6,6 +6,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { ComparisonDemo } from "./ComparisonDemo";
+import { OperatorDeployment } from "./OperatorDeployment";
+import { ReviewerEnrollment } from "./ReviewerEnrollment";
 import { consumeImportedBrowserSecret } from "./browser-secret";
 import { appConfig } from "./config";
 import "./styles.css";
@@ -13,7 +15,14 @@ import "./styles.css";
 setNetworkId(appConfig.networkId);
 consumeImportedBrowserSecret(appConfig.contractAddress ?? "unconfigured");
 
-const RootApp = window.location.pathname === "/compare" ? ComparisonDemo : App;
+const RootApp =
+  window.location.pathname === "/compare"
+    ? ComparisonDemo
+    : window.location.pathname === "/enroll"
+      ? ReviewerEnrollment
+      : window.location.pathname === "/deploy"
+        ? OperatorDeployment
+        : App;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

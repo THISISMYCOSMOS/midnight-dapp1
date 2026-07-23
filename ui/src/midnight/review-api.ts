@@ -8,6 +8,7 @@ import {
   type ReviewPrivateState,
 } from "@midnight-review/contract";
 import {
+  deployContract,
   findDeployedContract,
 } from "@midnight-ntwrk/midnight-js-contracts";
 import type { ContractAddress } from "@midnight-ntwrk/midnight-js-protocol/compact-runtime";
@@ -79,6 +80,23 @@ export class ReviewApi {
 
   async submitReview(body: string): Promise<void> {
     await this.deployedContract.callTx.submitReview(this.itemId, body);
+  }
+
+  static async deploy(
+    providers: ReviewProviders,
+    initialEligible: readonly Uint8Array[],
+    deploymentPrivateStateSecret: Uint8Array,
+    itemId: Uint8Array,
+  ): Promise<ReviewApi> {
+    const privateState = createReviewPrivateState(deploymentPrivateStateSecret);
+    const deployedContract = await deployContract(providers, {
+      compiledContract: ReviewContract,
+      privateStateId: reviewPrivateStateKey,
+      initialPrivateState: privateState,
+      args: [[...initialEligible]],
+    });
+
+    return new ReviewApi(deployedContract, providers, itemId, privateState);
   }
 
   static async join(

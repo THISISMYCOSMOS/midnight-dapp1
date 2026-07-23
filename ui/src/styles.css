@@ -21,6 +21,7 @@ body {
 }
 
 button,
+input,
 textarea {
   font: inherit;
 }
@@ -189,6 +190,77 @@ textarea:disabled {
   font-size: 15px;
   line-height: 1.6;
   white-space: pre-wrap;
+}
+
+.setup-panel {
+  max-width: 720px;
+}
+
+.setup-eyebrow {
+  margin: 0 0 8px;
+  color: #2f6f5e;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.setup-copy {
+  margin: 16px 0 0;
+  color: #6b6b6b;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.setup-key {
+  display: block;
+  margin-top: 24px;
+  padding: 12px;
+  overflow-wrap: anywhere;
+  border: 1px solid #e5e5e5;
+  background: #f8f8f8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.setup-fields {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.setup-fields label {
+  display: grid;
+  gap: 8px;
+  color: #6b6b6b;
+  font-size: 13px;
+}
+
+.setup-fields input {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px;
+  border: 1px solid #a0a0a0;
+  border-radius: 4px;
+  color: #1a1a1a;
+  background: #ffffff;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 13px;
+}
+
+.setup-result {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.setup-result p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.setup-link {
+  display: inline-block;
+  text-decoration: none;
 }
 
 .compare-page {

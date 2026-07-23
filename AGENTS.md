@@ -174,7 +174,9 @@ CLI에서 웹으로 변경 확정(2026-07-22). 근거: 증명 생성 대기는 C
 
 > **현재 상태 (2026-07-23): 최종 Merkle 계약과 비교용 unsafe 계약 컴파일, Vitest 8건,
 > `/compare` 20회 반복 검증, 로컬 proof server 8.1.0 기동 완료.**
-> 다음은 운영자 CLI로 Preprod 배포 후 실제 Lace·인덱서를 연결한 DApp 거래 검증이다.
+> 독립 운영자 CLI 지갑은 Preprod 상태 스트림 0건으로 10분 타임아웃했다.
+> 다음은 `/enroll`에서 만든 공개키 3개를 `/deploy`에 넣어 Lace로 배포한 뒤
+> 실제 인덱서 연결 DApp 거래를 검증하는 것이다.
 > 파일이 실제로 생기면 이 표의 상태를 갱신한다. 낡은 지도는 다음 세션이 대가를 치른다.
 
 | 경로 | 역할 | 소유 | 상태 |
@@ -193,8 +195,11 @@ CLI에서 웹으로 변경 확정(2026-07-22). 근거: 증명 생성 대기는 C
 | `contract/src/index.ts` | 생성 컨트랙트와 witness 결합 | 실행 | ✅ TypeScript 빌드 |
 | `contract/src/test/` | 정상·중복·미자격·다른 상품 + unsafe/Merkle 동일 입력·스트레스 비교 | 실행 | ✅ Vitest 8건 통과 |
 | `ui/src/ComparisonDemo.tsx` | 블라인드 게시판 안에서 동일 리뷰를 unsafe와 Merkle에 직접 제출 | 비교 | ✅ `/compare` 실제 브라우저 3경로 확인 |
-| `ui/` | React + DApp Connector + Lace | 실행 | 🟨 타입·번들·비교 데모 렌더 완료, 실연결 미검증 |
-| `cli/` | 운영자 배포·초기 자격자 3명 등록. 사용자용 CLI는 2.4 발동 시에만 | 실행 | ⬜ |
+| `ui/src/ReviewerEnrollment.tsx` | 리뷰어 브라우저 공개키 등록 `/enroll`. 비밀키 접근은 이 파일에만 | 리뷰어 | 🟨 공개키 렌더·복사 확인, 실제 리뷰어 3명 실행 미검증 |
+| `ui/src/OperatorDeployment.tsx` | 공개키 3개만 받는 운영자 Lace 배포 `/deploy` | 실행 | 🟨 입력 검증·Lace 미설치 오류 확인, 실제 배포 미검증 |
+| `ui/` | React + DApp Connector + Lace | 실행 | 🟨 타입·번들·비교·설정 화면 완료, 실제 Lace 거래 미검증 |
+| `reviewer-tools/` | 리뷰어 로컬 비밀키/공개키 CLI. 운영자는 실행하지 않음 | 리뷰어 | 🟨 저장소 내부 경로 거부 확인, 실제 리뷰어 실행 미검증 |
+| `cli/` | 운영자 배포 폴백. 리뷰어 공개키만 입력 | 실행 | 🟨 타입·빌드 통과, Preprod 지갑 상태 스트림 0건 타임아웃 |
 | `docker-compose.yml` | 로컬 proof server 8.1.0. 노드·인덱서는 공식 Preprod 원격 서비스 사용 | 실행 | ✅ TCP 6300·HTTP 200 |
 | `slides/` | 발표 자료 | 설계 | ⬜ |
 | `docs/research-r2.md` | 원문 인용·근거 보관 | 설계 | ⬜ |
@@ -374,7 +379,7 @@ Docker 볼륨의 OneDrive 외부 배치는 아직 검증하지 않았다.
 
 ### 컨트랙트 변경 시
 
-- [x] `compact compile` 통과 — **출력 원문 첨부** (2026-07-22: `Compiling 1 circuits:`, 종료 코드 0)
+- [x] `compact compile` 통과 — **출력 원문 첨부** (2026-07-23 재확인: `Compiling 1 circuits:`, 종료 코드 0)
 - [x] `ownPublicKey()` 미사용 확인 — **주석 제외 코드 라인에서 0건**.
       (금지 이유를 적은 주석은 있어도 된다. grep 건수만 보면 오판한다)
 - [x] 도메인 분리 문자열이 §3 골자와 일치
@@ -391,6 +396,10 @@ Docker 볼륨의 OneDrive 외부 배치는 아직 검증하지 않았다.
 - [x] `/compare`에서 동일 미자격 리뷰: unsafe 게시, Merkle 차단 확인
 - [x] `/compare`에서 동일 자격 리뷰: 양쪽 익명 게시 확인
 - [x] `/compare`에서 같은 자격자의 재작성: unsafe 재게시, Merkle 중복 차단 확인
+- [x] `/enroll` 화면에 공개 `reviewerKey`만 표시되고 비밀키·비밀 URL이 없는지 확인
+- [x] `/deploy`에서 중복 키·잘못된 형식을 Lace 호출 전에 차단하는지 확인
+- [x] Lace가 없는 브라우저에서 1초 안에 명시적 미설치 오류가 나오는지 확인
+- [ ] `/deploy`에서 실제 Lace 승인·계약 배포 성공 확인
 - [ ] **증명 생성 대기 시간 실측** — 3분 데모에 동작 3개면 대기가 누적된다.
       1회 20초를 넘으면 데모 동작을 2개로 줄인다
 
@@ -541,6 +550,27 @@ PowerShell에서 사용자가 지정한 `compact compile src/review.compact src/
 
 **교훈**: 종료 코드 0만으로 컴파일 성공을 판단하지 않는다. 실행 파일 경로·버전·출력 형식을
 함께 확인하고, Windows의 `Listing ... compression ratio` 출력은 즉시 오인으로 판정한다.
+
+### 6.9 독립 운영자 CLI 지갑 동기화 장기 대기 — 필수 경로에서 제외 (2026-07-23)
+
+공식 `example-bboard`와 같은 `FluentWalletBuilder` 시작 순서로 운영자 Preprod 지갑을
+두 번 실행했지만, 두 번 모두 `wallet.state()`가 10분 동안 한 번도 방출되지 않았다.
+원문 핵심은 `Timeout has occurred`, `lastValue: null`, `seen: 0`이며
+RPC는 시작 직후 코드 1000 `Normal Closure`로 끊겼다.
+
+첫 실패 뒤 공식 예제처럼 시작 전에 shielded 초기 상태를 구독하도록 수정했지만 결과는 같았다.
+두 실행 모두 상태 동기화 전에 끝났으므로 faucet 요청, tDUST 등록, 계약 배포는 0건이다.
+
+**결정**: 발표에 독립 CLI 지갑은 필수가 아니다. 공식 `example-bboard`의 브라우저
+DApp Connector 패턴을 따라 Lace가 거래를 balance/submit하는 `/deploy`를 기본 배포 경로로
+사용한다. CLI는 폴백·진단 코드로 남기되 같은 10분 재시도를 반복하지 않는다.
+
+**공개 경계 유지**:
+
+- 리뷰어 브라우저 `/enroll`은 비밀키를 브라우저에만 저장하고 공개 `reviewerKey`만 표시한다
+- 운영자 `/deploy`는 서로 다른 공개키 3개만 받고 리뷰어 비밀키를 읽지 않는다
+- 운영자 배포용 임시 private state는 메모리에서만 만들며 자격 Merkle 트리에 넣지 않는다
+- 실제 Lace 승인·배포·거래는 아직 검증하지 않았으므로 완료로 표시하지 않는다
 
 ---
 
