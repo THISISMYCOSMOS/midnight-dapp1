@@ -1,2 +1,6 @@
 contract/node_modules/
 contract/dist/
+cli/node_modules/
+cli/dist/
+cli/logs/
+ui/.env.local

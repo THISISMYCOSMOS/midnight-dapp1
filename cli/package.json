@@ -1,0 +1,42 @@
+{
+  "name": "@midnight-review/operator-cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prebuild": "npm --prefix ../contract run build",
+    "build": "tsc --project tsconfig.json",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "prepare:preprod": "npm run build --silent && node dist/deploy-preprod.js --prepare-wallet-only",
+    "deploy:preprod": "npm run build --silent && node dist/deploy-preprod.js"
+  },
+  "engines": {
+    "node": ">=24.11.1"
+  },
+  "dependencies": {
+    "@midnight-ntwrk/midnight-js-contracts": "4.1.1",
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "4.1.1",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "4.1.1",
+    "@midnight-ntwrk/midnight-js-network-id": "4.1.1",
+    "@midnight-ntwrk/midnight-js-node-zk-config-provider": "4.1.1",
+    "@midnight-ntwrk/midnight-js-protocol": "4.1.1",
+    "@midnight-ntwrk/midnight-js-types": "4.1.1",
+    "@midnight-ntwrk/midnight-js-utils": "4.1.1",
+    "@midnight-ntwrk/testkit-js": "4.1.1",
+    "@midnight-ntwrk/wallet-sdk": "1.2.0",
+    "@midnight-ntwrk/wallet-sdk-address-format": "3.1.2",
+    "@midnight-ntwrk/wallet-sdk-facade": "4.1.0",
+    "@midnight-ntwrk/wallet-sdk-hd": "3.0.3",
+    "@midnight-ntwrk/wallet-sdk-shielded": "3.0.2",
+    "@midnight-ntwrk/wallet-sdk-unshielded-wallet": "3.1.0",
+    "@midnight-review/contract": "file:../contract",
+    "pino": "10.3.1",
+    "rxjs": "7.8.2",
+    "ws": "8.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "25.3.0",
+    "@types/ws": "8.18.1",
+    "typescript": "5.9.3"
+  }
+}

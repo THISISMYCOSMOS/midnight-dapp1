@@ -2,7 +2,7 @@
 
 > 이 문서는 "이 프로젝트에서 무엇을 조심하는가"다. "어떻게 일하는가"는 별도 마스터 작업 프롬프트가 담당한다.
 > 작업자(Claude / Codex / 기타)는 착수 전 이 문서를 전부 읽는다.
-> 최종 갱신: 2026-07-22
+> 최종 갱신: 2026-07-23
 
 ---
 
@@ -34,7 +34,14 @@
 
 - 임계 폭로 에스크로 — **구현하지 않는다.** 개념 슬라이드 1장만
 - 구매 attestation 서명 검증 — Schnorr 폴리필 비용 과다
-- DUST 생성 관련 일체
+- DUST를 앱 기능·UI·컨트랙트로 구현하는 일체
+
+**사용자 승인 인프라 예외 (2026-07-23)**:
+
+- Preprod 계약 배포 지갑을 준비하기 위해 공식 `example-bboard`와 같은 tDUST 등록 절차만
+  운영자 CLI 내부에서 사용한다
+- 이 예외를 사용자 기능·발표 기능으로 확장하지 않는다
+- 리뷰어 비밀키는 DUST 지갑·운영자 CLI와 완전히 분리한다
 
 > **범위 조정 (2026-07-22)**: Merkle 멤버십 증명은 원래 범위 밖이었으나 **범위 안으로 되돌렸다.**
 > Set 기반 화이트리스트로는 익명성이 성립하지 않기 때문이다 (§3 설계 결정 기록 참조).
@@ -165,8 +172,9 @@ CLI에서 웹으로 변경 확정(2026-07-22). 근거: 증명 생성 대기는 C
 
 ## 3. 아키텍처 지도
 
-> **현재 상태 (2026-07-22): 최종 Merkle 계약과 비교용 unsafe 계약 컴파일, Vitest 8건, `/compare` 브라우저 직접 비교 검증 완료.**
-> 다음은 실제 Lace·인덱서·proof server를 연결한 DApp 거래 검증과 운영자 CLI다.
+> **현재 상태 (2026-07-23): 최종 Merkle 계약과 비교용 unsafe 계약 컴파일, Vitest 8건,
+> `/compare` 20회 반복 검증, 로컬 proof server 8.1.0 기동 완료.**
+> 다음은 운영자 CLI로 Preprod 배포 후 실제 Lace·인덱서를 연결한 DApp 거래 검증이다.
 > 파일이 실제로 생기면 이 표의 상태를 갱신한다. 낡은 지도는 다음 세션이 대가를 치른다.
 
 | 경로 | 역할 | 소유 | 상태 |
@@ -187,7 +195,7 @@ CLI에서 웹으로 변경 확정(2026-07-22). 근거: 증명 생성 대기는 C
 | `ui/src/ComparisonDemo.tsx` | 블라인드 게시판 안에서 동일 리뷰를 unsafe와 Merkle에 직접 제출 | 비교 | ✅ `/compare` 실제 브라우저 3경로 확인 |
 | `ui/` | React + DApp Connector + Lace | 실행 | 🟨 타입·번들·비교 데모 렌더 완료, 실연결 미검증 |
 | `cli/` | 운영자 배포·초기 자격자 3명 등록. 사용자용 CLI는 2.4 발동 시에만 | 실행 | ⬜ |
-| `docker-compose.yml` | 노드 + 인덱서 + proof server | 실행 | ⬜ |
+| `docker-compose.yml` | 로컬 proof server 8.1.0. 노드·인덱서는 공식 Preprod 원격 서비스 사용 | 실행 | ✅ TCP 6300·HTTP 200 |
 | `slides/` | 발표 자료 | 설계 | ⬜ |
 | `docs/research-r2.md` | 원문 인용·근거 보관 | 설계 | ⬜ |
 
@@ -320,7 +328,7 @@ Compact 0.31.1 최소 예제를 두 형태로 각각 컴파일했다.
 ### 4.3 실행 주체 분담
 
 **현재 Codex 실행 환경**: Windows Node v24.14.1과 WSL2 `midnight-ubuntu`(Ubuntu 24.04 LTS)가 동작한다.
-Compact 0.31.1 실컴파일과 npm 검증을 2026-07-22에 완료했다.
+Compact 0.31.1 실컴파일과 npm 검증을 2026-07-23에 재확인했다.
 설계 담당(Claude/Cowork)의 별도 Linux 샌드박스 기동 실패 기록은 과거 환경 이력으로만 남긴다.
 
 | 작업 | 실행 주체 |
@@ -331,7 +339,7 @@ Compact 0.31.1 실컴파일과 npm 검증을 2026-07-22에 완료했다.
 
 ### 4.4 재기동 절차
 
-> 아래 환경·컴파일 명령은 2026-07-22 Windows + WSL2 Ubuntu에서 실측했다.
+> 아래 환경·컴파일 명령은 2026-07-23 Windows + WSL2 Ubuntu에서 재실측했다.
 
 ```bash
 # 환경 확인
@@ -344,10 +352,11 @@ wsl.exe -d midnight-ubuntu --exec /root/.local/bin/compact --version
 wsl.exe -d midnight-ubuntu --exec bash -lc \
   "cd /mnt/c/Users/parks/OneDrive/Desktop/midnight/contract && /root/.local/bin/compact compile src/review.compact src/managed/review"
 
-# 로컬 스택 (노드 + 인덱서 + proof server)
-# 아래 Docker 명령은 아직 실행하지 않았다.
+# 로컬 proof server. 노드·인덱서는 공식 Preprod 원격 서비스 사용
 docker compose up -d
-docker compose ps   # 3개 전부 healthy 확인
+docker compose ps
+# 2026-07-23 실측: midnightntwrk/proof-server:8.1.0, 127.0.0.1:6300,
+# TCP 연결 성공, GET / HTTP 200
 ```
 
 ### 4.5 OneDrive 주의
@@ -392,6 +401,15 @@ Docker 볼륨의 OneDrive 외부 배치는 아직 검증하지 않았다.
 - [ ] 미자격자 차단 — 실패까지 재현
 - [x] 비교 구간 무음 원본 녹화 — `docs/blind-review-comparison-demo.webm`
 - [ ] 실제 Lace 거래를 포함한 최종 발표 영상 녹화 완료 (§2.3)
+
+### 실제 Preprod 연동 시
+
+- [ ] 리뷰어 비밀키는 리뷰어 쪽에서만 생성·보관하고 운영자는 파생 `reviewerKey`만 받는다
+- [ ] 운영자 CLI 출력·저장 파일에 리뷰어 비밀키가 0건이다
+- [ ] tDUST 처리는 §1의 승인된 배포 지갑 인프라 예외 안에서만 사용한다
+- [ ] 공식 Preprod `/api/v4/graphql`·`/api/v4/graphql/ws` 주소를 사용한다
+- [ ] 시뮬레이터 결과와 실제 거래 결과를 분리해 표시한다
+- [ ] 정상·미자격·중복 각각의 실제 거래 결과와 소요 시간을 원문으로 보관한다
 
 ### 슬라이드
 
@@ -467,6 +485,62 @@ ledger 연산 인자는 전부 공개다.
 
 **교훈**: 프라이버시 설계에서 "간단한 안"을 고를 때는
 **그 안이 어떤 값을 온체인에 노출하는지 먼저 나열**한다. 편의성을 먼저 재지 않는다.
+
+### 6.5 운영자가 리뷰어 비밀키를 만드는 배포 초안 — 폐기 (2026-07-23)
+
+운영자 CLI가 자격자 3명의 비밀키를 만들고 URL 조각까지 출력하는 초안을 작성하려 했다.
+파일 생성 전에 중단되어 저장소에는 들어가지 않았다.
+
+**문제**: 운영자가 비밀키를 알면 공개 nullifier를 다시 계산해 리뷰 작성자를 식별할 수 있다.
+온체인 공개 경계가 안전해도 오프체인 키 배포가 익명성을 무너뜨린다.
+
+**확정 경계**: 리뷰어가 자기 환경에서 비밀키를 만들고 보관한다. 운영자는
+`deriveReviewerKey(secret)` 결과인 공개 파생키 3개만 받아 constructor에 전달한다.
+
+### 6.6 실제 연동 환경을 로컬 풀스택으로 추측 — 폐기 (2026-07-23)
+
+초기 계획은 로컬 노드·인덱서·proof server 3개를 Docker로 띄우는 것이었다.
+현재 공식 `example-bboard`와 환경 문서를 다시 확인한 결과, 발표용 Preprod 경로는
+원격 Preprod 노드·인덱서와 로컬 proof server 조합이다.
+
+**확정 경로**:
+
+- Indexer: `https://indexer.preprod.midnight.network/api/v4/graphql`
+- Indexer WS: `wss://indexer.preprod.midnight.network/api/v4/graphql/ws`
+- Node RPC: `https://rpc.preprod.midnight.network`
+- Node WS: `wss://rpc.preprod.midnight.network`
+- Proof server: `http://127.0.0.1:6300`
+
+### 6.7 컴파일 출력 폴더 이름 추측 — 재발 금지 (2026-07-23)
+
+비교 계약 재검증 중 기존 출력 폴더가 `managed/unsafe-review`인데
+`managed/review`로 잘못 지정해 생성물 폴더를 만들었다. 즉시 올바른 경로로 다시 컴파일하고
+잘못 만든 폴더만 절대 경로 검증 후 삭제했다.
+
+**교훈**: 컴파일 전에 기존 managed 디렉터리와 package import 경로를 먼저 읽는다.
+출력 경로는 계약 이름으로 추측하지 않는다.
+
+### 6.8 Windows `compact.exe`를 Midnight 컴파일러로 오인 — 재발 금지 (2026-07-23)
+
+PowerShell에서 사용자가 지정한 `compact compile src/review.compact src/managed/review`를
+그대로 실행했더니 종료 코드가 0이었지만, 실행된 것은 Midnight가 아니라
+`C:\Windows\System32\compact.exe` 파일 압축 도구였다. `Listing ...`과 압축률을 출력한
+결과는 계약 컴파일 증거가 아니므로 폐기했다.
+
+**확정 실행 경로**: Windows에서는 항상 WSL2 `midnight-ubuntu`의
+`/root/.local/bin/compact`를 절대 경로로 실행한다. 실행 전
+`compact --version`(devtools 0.5.1)과 `compact compile --version`(compiler 0.31.1)을
+둘 다 확인한다.
+
+2026-07-23 실제 0.31.1 재검증 결과:
+
+- 최종 계약: 출력 `Compiling 1 circuits:`, 종료 코드 0
+- 최소 예제 `path`: 출력 없음, 종료 코드 0
+- 동일 최소 예제 `path.value`: 종료 코드 1,
+  `structure MerkleTreePath has no field named value`
+
+**교훈**: 종료 코드 0만으로 컴파일 성공을 판단하지 않는다. 실행 파일 경로·버전·출력 형식을
+함께 확인하고, Windows의 `Listing ... compression ratio` 출력은 즉시 오인으로 판정한다.
 
 ---
 
