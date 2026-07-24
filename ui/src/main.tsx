@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import "./browser-polyfills";
 import "@midnight-ntwrk/dapp-connector-api";
 import { setNetworkId } from "@midnight-ntwrk/midnight-js-network-id";
 import { StrictMode } from "react";

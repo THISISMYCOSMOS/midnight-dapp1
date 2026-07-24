@@ -43,6 +43,22 @@
 - 이 예외를 사용자 기능·발표 기능으로 확장하지 않는다
 - 리뷰어 비밀키는 DUST 지갑·운영자 CLI와 완전히 분리한다
 
+**사용자 승인 발표용 Preprod MVP 범위 (2026-07-23, 위 예외를 대체)**:
+
+- 최종 Merkle 계약은 Midnight **Preprod**에 한 번 실제 배포하고 리뷰 거래를 검증한다
+- `contract/comparison/unsafe-review.compact`는 로컬 비교 시뮬레이터로만 실행하며
+  Preprod·Mainnet에 배포하지 않는다
+- 공식 Faucet의 테스트용 tNIGHT와 Lace에서 준비한 테스트용 tDUST만 사용한다
+- 지갑 승인과 테스트넷 트랜잭션은 실제로 발생하며 Preprod에 기록된다고 명시한다
+- Mainnet, 실제 코인 구매, 신용카드 결제, 실제 금전 가치가 있는 토큰 사용은 금지한다
+- 발표용 MVP에서는 실제 리뷰어 1명이 프로젝트 전용 비밀키를 자기 브라우저에서
+  생성·보관하고 운영자는 그 공개 `reviewerKey` 1개만 받는다. constructor의 나머지
+  두 자리는 `/deploy`가 생성한 서로 다른 32바이트 난수 공개값으로 채운다. 이 두
+  값에 대응하는 비밀키는 만들거나 저장하지 않으며 리뷰 작성에 사용하지 않는다.
+  Lace 계정 공개키를 리뷰 자격 키로 사용하지 않는다
+- 발표 비교 화면은 `ownPublicKey 비교 기준 — 로컬 데모`와
+  `Merkle 자격 증명 — Preprod 실제 거래`를 명확히 구분한다
+
 > **범위 조정 (2026-07-22)**: Merkle 멤버십 증명은 원래 범위 밖이었으나 **범위 안으로 되돌렸다.**
 > Set 기반 화이트리스트로는 익명성이 성립하지 않기 때문이다 (§3 설계 결정 기록 참조).
 > 이 조정으로 `.compact` 줄 수 상한을 100 → **130줄**로 올린다.
@@ -168,14 +184,26 @@ CLI에서 웹으로 변경 확정(2026-07-22). 근거: 증명 생성 대기는 C
 - **어느 쪽도 단독으로 "됐다"고 선언하지 않는다**
 - 검증 불가 환경이면 "검증 못 했음"을 명시하고 무엇을 어떻게 확인해야 하는지 남긴다
 
+### 2.9 발표용 Preprod 거래 경계
+
+- 최종 Merkle 계약의 Preprod 배포와 리뷰 거래만 허용한다
+- unsafe 비교 계약은 로컬에서만 실행하고 어떤 네트워크에도 배포하지 않는다
+- Lace 연결은 Preprod 지갑·Proof Server·테스트용 tDUST 확인과 최종 Merkle 거래 승인에만 쓴다
+- Lace 복구 문구·비밀번호·개인키를 읽거나 저장하거나 요청하지 않는다
+- 실제 배포 직전에 Preprod·비 Mainnet·로컬 Proof Server·실제 금전 미사용을 다시 확인한다
+- Lace 승인 화면은 사용자가 직접 확인하고 승인한다
+- 계약 주소·배포 트랜잭션 ID·리뷰 거래 결과·소요 시간을 원문으로 보관한다
+- 시뮬레이터 결과와 실제 Preprod 거래 결과를 같은 실행 환경인 것처럼 표현하지 않는다
+
 ---
 
 ## 3. 아키텍처 지도
 
-> **현재 상태 (2026-07-23): 최종 Merkle 계약과 비교용 unsafe 계약 컴파일, Vitest 8건,
-> `/compare` 20회 반복 검증, 로컬 proof server 8.1.0 기동 완료.**
+> **현재 상태 (2026-07-23): 최종 Merkle 계약과 비교용 unsafe 계약을 WSL Compact
+> 0.31.1로 재컴파일했고 생성 산출물 변경이 없었다. Vitest 8건, 로컬 proof server
+> 8.1.0 기동, Preprod/로컬 비교를 분리한 `/compare` 초기 화면과 UI 빌드 확인 완료.**
 > 독립 운영자 CLI 지갑은 Preprod 상태 스트림 0건으로 10분 타임아웃했다.
-> 다음은 `/enroll`에서 만든 공개키 3개를 `/deploy`에 넣어 Lace로 배포한 뒤
+> 다음은 `/enroll`에서 만든 실제 공개키 1개와 `/deploy`의 난수 공개값 2개로 Lace 배포한 뒤
 > 실제 인덱서 연결 DApp 거래를 검증하는 것이다.
 > 파일이 실제로 생기면 이 표의 상태를 갱신한다. 낡은 지도는 다음 세션이 대가를 치른다.
 
@@ -194,10 +222,10 @@ CLI에서 웹으로 변경 확정(2026-07-22). 근거: 증명 생성 대기는 C
 | `contract/src/witnesses.ts` | 비밀키와 자격 Merkle 경로 witness 구현 | 실행 | ✅ TypeScript 검사·시뮬레이터 검증 |
 | `contract/src/index.ts` | 생성 컨트랙트와 witness 결합 | 실행 | ✅ TypeScript 빌드 |
 | `contract/src/test/` | 정상·중복·미자격·다른 상품 + unsafe/Merkle 동일 입력·스트레스 비교 | 실행 | ✅ Vitest 8건 통과 |
-| `ui/src/ComparisonDemo.tsx` | 블라인드 게시판 안에서 동일 리뷰를 unsafe와 Merkle에 직접 제출 | 비교 | ✅ `/compare` 실제 브라우저 3경로 확인 |
-| `ui/src/ReviewerEnrollment.tsx` | 리뷰어 브라우저 공개키 등록 `/enroll`. 비밀키 접근은 이 파일에만 | 리뷰어 | 🟨 공개키 렌더·복사 확인, 실제 리뷰어 3명 실행 미검증 |
-| `ui/src/OperatorDeployment.tsx` | 공개키 3개만 받는 운영자 Lace 배포 `/deploy` | 실행 | 🟨 입력 검증·Lace 미설치 오류 확인, 실제 배포 미검증 |
-| `ui/` | React + DApp Connector + Lace | 실행 | 🟨 타입·번들·비교·설정 화면 완료, 실제 Lace 거래 미검증 |
+| `ui/src/ComparisonDemo.tsx` | 블라인드 게시판 안에서 동일 리뷰를 로컬 unsafe와 Preprod Merkle에 직접 제출 | 비교 | 🟨 혼합 실행 환경 표기·초기 렌더 확인, 실제 Preprod 3경로 미검증 |
+| `ui/src/ReviewerEnrollment.tsx` | 실제 리뷰어 브라우저 공개키 등록 `/enroll`. 비밀키 접근은 이 파일에만 | 리뷰어 | 🟨 공개키 렌더·복사 확인, 실제 리뷰 거래 미검증 |
+| `ui/src/OperatorDeployment.tsx` | 실제 공개키 1개와 난수 공개값 2개를 쓰는 운영자 Lace 배포 `/deploy` | 실행 | 🟨 입력 검증·Preprod 사전 점검·초기 렌더 확인, 실제 배포 미검증 |
+| `ui/` | React + DApp Connector + Lace | 실행 | 🟨 타입·번들·혼합 비교·설정 화면 완료, 실제 Lace 거래 미검증 |
 | `reviewer-tools/` | 리뷰어 로컬 비밀키/공개키 CLI. 운영자는 실행하지 않음 | 리뷰어 | 🟨 저장소 내부 경로 거부 확인, 실제 리뷰어 실행 미검증 |
 | `cli/` | 운영자 배포 폴백. 리뷰어 공개키만 입력 | 실행 | 🟨 타입·빌드 통과, Preprod 지갑 상태 스트림 0건 타임아웃 |
 | `docker-compose.yml` | 로컬 proof server 8.1.0. 노드·인덱서는 공식 Preprod 원격 서비스 사용 | 실행 | ✅ TCP 6300·HTTP 200 |
@@ -393,12 +421,12 @@ Docker 볼륨의 OneDrive 외부 배치는 아직 검증하지 않았다.
 
 - [x] 실제로 띄워서 실측한다. "그렇게 보일 것"이 아니라 렌더된 텍스트·실제 동작을 읽는다
 - [x] 지갑 미연결 상태 동작 확인
-- [x] `/compare`에서 동일 미자격 리뷰: unsafe 게시, Merkle 차단 확인
-- [x] `/compare`에서 동일 자격 리뷰: 양쪽 익명 게시 확인
-- [x] `/compare`에서 같은 자격자의 재작성: unsafe 재게시, Merkle 중복 차단 확인
+- [ ] `/compare`에서 동일 미자격 리뷰: 로컬 unsafe 게시, Preprod Merkle 차단 확인
+- [ ] `/compare`에서 동일 자격 리뷰: 로컬 unsafe와 Preprod Merkle 익명 게시 확인
+- [ ] `/compare`에서 같은 자격자의 재작성: 로컬 unsafe 재게시, Preprod Merkle 중복 차단 확인
 - [x] `/enroll` 화면에 공개 `reviewerKey`만 표시되고 비밀키·비밀 URL이 없는지 확인
 - [x] `/deploy`에서 중복 키·잘못된 형식을 Lace 호출 전에 차단하는지 확인
-- [x] Lace가 없는 브라우저에서 1초 안에 명시적 미설치 오류가 나오는지 확인
+- [x] Lace가 없는 브라우저에서 명시적 미설치 오류가 나오는지 확인
 - [ ] `/deploy`에서 실제 Lace 승인·계약 배포 성공 확인
 - [ ] **증명 생성 대기 시간 실측** — 3분 데모에 동작 3개면 대기가 누적된다.
       1회 20초를 넘으면 데모 동작을 2개로 줄인다
@@ -413,9 +441,10 @@ Docker 볼륨의 OneDrive 외부 배치는 아직 검증하지 않았다.
 
 ### 실제 Preprod 연동 시
 
-- [ ] 리뷰어 비밀키는 리뷰어 쪽에서만 생성·보관하고 운영자는 파생 `reviewerKey`만 받는다
+- [ ] 실제 리뷰어 비밀키는 리뷰어 쪽에서만 생성·보관하고 운영자는 파생
+      `reviewerKey` 1개만 받는다. 나머지 두 공개값에는 대응 비밀키가 없다
 - [ ] 운영자 CLI 출력·저장 파일에 리뷰어 비밀키가 0건이다
-- [ ] tDUST 처리는 §1의 승인된 배포 지갑 인프라 예외 안에서만 사용한다
+- [ ] 공식 Faucet의 테스트용 tNIGHT와 Lace의 테스트용 tDUST만 사용한다
 - [ ] 공식 Preprod `/api/v4/graphql`·`/api/v4/graphql/ws` 주소를 사용한다
 - [ ] 시뮬레이터 결과와 실제 거래 결과를 분리해 표시한다
 - [ ] 정상·미자격·중복 각각의 실제 거래 결과와 소요 시간을 원문으로 보관한다
@@ -476,7 +505,9 @@ ledger 연산 인자는 전부 공개다.
 
 ### 6.3 확인 안 된 채로 남은 것 — 발표 시 명시
 
-- 최종/비교 계약 전체 컴파일, TypeScript 빌드, 로컬 시뮬레이터 8건, UI 타입·번들·`/compare` 브라우저 동작은 검증 완료. 실제 provider 연결 거래와 실제 증명 생성 시간은 아직 검증하지 않음
+- 최종/비교 계약의 Compact 0.31.1 재컴파일, TypeScript 빌드, 로컬 시뮬레이터
+  8건, UI 타입·번들·`/compare` 초기 렌더는 확인했다. 실제 provider 연결 거래와
+  실제 증명 생성 시간은 아직 검증하지 않음
 - `changePin` 트랜잭션의 인덱서 노출 형태 실측 안 함
 - `merkleTreePathRoot` 호출 시그니처 불일치는 실컴파일로 해결됨: 현재 반환형에는 `path` 직접 전달 (§3)
 - example-bboard의 컨트랙트 어댑터·witness·provider·React UI 패키지 구조는 공식 저장소 원문 확인 완료. 실제 연결 실행은 안 함
@@ -504,7 +535,9 @@ ledger 연산 인자는 전부 공개다.
 온체인 공개 경계가 안전해도 오프체인 키 배포가 익명성을 무너뜨린다.
 
 **확정 경계**: 리뷰어가 자기 환경에서 비밀키를 만들고 보관한다. 운영자는
-`deriveReviewerKey(secret)` 결과인 공개 파생키 3개만 받아 constructor에 전달한다.
+`deriveReviewerKey(secret)` 결과인 실제 공개 파생키 1개와 `/deploy`가 생성한 서로
+다른 32바이트 난수 공개값 2개를 constructor에 전달한다. 난수 공개값에 대응하는
+비밀키는 만들거나 저장하지 않는다.
 
 ### 6.6 실제 연동 환경을 로컬 풀스택으로 추측 — 폐기 (2026-07-23)
 
@@ -567,8 +600,10 @@ DApp Connector 패턴을 따라 Lace가 거래를 balance/submit하는 `/deploy`
 
 **공개 경계 유지**:
 
-- 리뷰어 브라우저 `/enroll`은 비밀키를 브라우저에만 저장하고 공개 `reviewerKey`만 표시한다
-- 운영자 `/deploy`는 서로 다른 공개키 3개만 받고 리뷰어 비밀키를 읽지 않는다
+- 실제 리뷰어 브라우저 `/enroll`은 비밀키를 브라우저에만 저장하고 공개
+  `reviewerKey` 1개만 표시한다
+- 운영자 `/deploy`는 실제 공개키 1개만 받고 나머지 두 자리는 난수 공개값으로
+  자동 채우며 리뷰어 비밀키를 읽지 않는다
 - 운영자 배포용 임시 private state는 메모리에서만 만들며 자격 Merkle 트리에 넣지 않는다
 - 실제 Lace 승인·배포·거래는 아직 검증하지 않았으므로 완료로 표시하지 않는다
 

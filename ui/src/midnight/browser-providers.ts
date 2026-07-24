@@ -2,6 +2,7 @@
 
 import {
   type ConnectedAPI,
+  type Configuration,
   type InitialAPI,
 } from "@midnight-ntwrk/dapp-connector-api";
 import { FetchZkConfigProvider } from "@midnight-ntwrk/midnight-js-fetch-zk-config-provider";
@@ -44,12 +45,80 @@ export type BrowserDeploymentConfig = Omit<
   "contractAddress"
 >;
 
+export type PreprodWalletCheck = {
+  readonly networkId: string;
+  readonly proofServerUri: string;
+  readonly dustBalance: string;
+  readonly dustCap: string;
+};
+
 export const createPublicDataProvider = (
   indexerUri: string,
   indexerWsUri: string,
 ) => indexerPublicDataProvider(indexerUri, indexerWsUri, window.WebSocket);
 
 const compatibleConnectorVersion = "4.x";
+const walletApprovalTimeoutMs = 120_000;
+const preprodIndexerUri =
+  "https://indexer.preprod.midnight.network/api/v4/graphql";
+const preprodIndexerWsUri =
+  "wss://indexer.preprod.midnight.network/api/v4/graphql/ws";
+
+const assertPreprodRequest = (config: BrowserDeploymentConfig): void => {
+  if (config.networkId !== "preprod") {
+    throw new Error("발표용 MVP는 Preprod 네트워크만 사용할 수 있습니다");
+  }
+  if (
+    config.indexerUri !== preprodIndexerUri ||
+    config.indexerWsUri !== preprodIndexerWsUri
+  ) {
+    throw new Error("공식 Preprod 인덱서 주소가 아닙니다");
+  }
+};
+
+const assertPreprodWallet = (configuration: Configuration): string => {
+  if (configuration.networkId !== "preprod") {
+    throw new Error(
+      `Lace 네트워크가 Preprod가 아닙니다: ${configuration.networkId}`,
+    );
+  }
+
+  if (!configuration.proverServerUri) {
+    throw new Error("Lace에서 Proof Server 주소를 받지 못했습니다");
+  }
+
+  let proofServerUrl: URL;
+  try {
+    proofServerUrl = new URL(configuration.proverServerUri);
+  } catch {
+    throw new Error(
+      `Lace Proof Server 주소가 올바르지 않습니다: ${configuration.proverServerUri}`,
+    );
+  }
+
+  const isLocalHost =
+    proofServerUrl.hostname === "localhost" ||
+    proofServerUrl.hostname === "127.0.0.1";
+  const isRootPath =
+    (proofServerUrl.pathname === "" || proofServerUrl.pathname === "/") &&
+    proofServerUrl.search === "" &&
+    proofServerUrl.hash === "";
+
+  if (
+    proofServerUrl.protocol !== "http:" ||
+    !isLocalHost ||
+    proofServerUrl.port !== "6300" ||
+    proofServerUrl.username !== "" ||
+    proofServerUrl.password !== "" ||
+    !isRootPath
+  ) {
+    throw new Error(
+      `Lace Proof Server가 로컬 6300이 아닙니다: ${configuration.proverServerUri}`,
+    );
+  }
+
+  return proofServerUrl.origin;
+};
 
 const firstCompatibleWallet = (): InitialAPI | undefined => {
   if (!window.midnight) return undefined;
@@ -80,7 +149,7 @@ const connectToWallet = async (networkId: string): Promise<ConnectedAPI> => {
     new Promise<never>((_, reject) =>
       window.setTimeout(
         () => reject(new Error("지갑 연결 응답 시간이 초과되었습니다")),
-        5_000,
+        walletApprovalTimeoutMs,
       ),
     ),
   ]);
@@ -91,11 +160,10 @@ const connectToWallet = async (networkId: string): Promise<ConnectedAPI> => {
 const connectReviewProviders = async (
   config: BrowserDeploymentConfig,
 ): Promise<ReviewProviders> => {
+  assertPreprodRequest(config);
   const connectedApi = await connectToWallet(config.networkId);
   const walletConfig = await connectedApi.getConfiguration();
-  if (!walletConfig.proverServerUri) {
-    throw new Error("지갑에서 proof server 주소를 받지 못했습니다");
-  }
+  const proofServerUri = assertPreprodWallet(walletConfig);
   const addresses = await connectedApi.getShieldedAddresses();
   const zkConfigProvider = new FetchZkConfigProvider<ReviewCircuitKeys>(
     window.location.origin,
@@ -110,7 +178,7 @@ const connectReviewProviders = async (
     privateStateProvider,
     zkConfigProvider,
     proofProvider: httpClientProofProvider(
-      walletConfig.proverServerUri,
+      proofServerUri,
       zkConfigProvider,
     ),
     publicDataProvider: createPublicDataProvider(
@@ -143,6 +211,23 @@ const connectReviewProviders = async (
         return transaction.identifiers()[0];
       },
     },
+  };
+};
+
+export const inspectPreprodWallet = async (
+  config: BrowserDeploymentConfig,
+): Promise<PreprodWalletCheck> => {
+  assertPreprodRequest(config);
+  const connectedApi = await connectToWallet(config.networkId);
+  const configuration = await connectedApi.getConfiguration();
+  const proofServerUri = assertPreprodWallet(configuration);
+  const dust = await connectedApi.getDustBalance();
+
+  return {
+    networkId: configuration.networkId,
+    proofServerUri,
+    dustBalance: dust.balance.toString(),
+    dustCap: dust.cap.toString(),
   };
 };
 

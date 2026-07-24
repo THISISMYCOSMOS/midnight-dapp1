@@ -30,6 +30,12 @@ export type ReviewAuthorState = ReviewPublicState & {
   readonly alreadyReviewed: boolean;
 };
 
+export type PublicTransactionRecord = {
+  readonly txId: string;
+  readonly blockHeight: number;
+  readonly blockTimestamp: number;
+};
+
 export const observeReviewState = (
   publicDataProvider: PublicDataProvider,
   contractAddress: ContractAddress,
@@ -78,8 +84,24 @@ export class ReviewApi {
     return this.deployedContract.deployTxData.public.contractAddress;
   }
 
-  async submitReview(body: string): Promise<void> {
-    await this.deployedContract.callTx.submitReview(this.itemId, body);
+  get deploymentTransaction(): PublicTransactionRecord {
+    const { txId, blockHeight, blockTimestamp } =
+      this.deployedContract.deployTxData.public;
+    return {
+      txId,
+      blockHeight,
+      blockTimestamp,
+    };
+  }
+
+  async submitReview(body: string): Promise<PublicTransactionRecord> {
+    const { public: finalized } =
+      await this.deployedContract.callTx.submitReview(this.itemId, body);
+    return {
+      txId: finalized.txId,
+      blockHeight: finalized.blockHeight,
+      blockTimestamp: finalized.blockTimestamp,
+    };
   }
 
   static async deploy(

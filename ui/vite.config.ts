@@ -40,8 +40,16 @@ export default defineConfig({
     ],
   },
   resolve: {
-    alias: {
-      assert: "assert/",
-    },
+    dedupe: ["@midnight-ntwrk/compact-js"],
+    alias: [
+      // midnight-js-protocol only re-exports compact-js. Resolve both public
+      // paths to the same module so compact-js's module-local context Symbol
+      // is not duplicated by Vite's dependency optimizer.
+      {
+        find: /^@midnight-ntwrk\/midnight-js-protocol\/compact-js(\/.*)?$/,
+        replacement: "@midnight-ntwrk/compact-js$1",
+      },
+      { find: "assert", replacement: "assert/" },
+    ],
   },
 });

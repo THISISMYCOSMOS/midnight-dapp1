@@ -246,6 +246,44 @@ textarea:disabled {
   font-size: 13px;
 }
 
+.setup-checks {
+  margin: 24px 0 0;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.setup-checks div {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid #e5e5e5;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.setup-checks dt {
+  color: #6b6b6b;
+}
+
+.setup-checks dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.setup-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 24px;
+  color: #6b6b6b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.setup-confirm input {
+  margin-top: 3px;
+}
+
 .setup-result {
   margin-top: 32px;
   padding-top: 24px;
@@ -284,6 +322,20 @@ textarea:disabled {
 
 .compare-hero h1 {
   margin-top: 8px;
+}
+
+.compare-network-state {
+  display: grid;
+  gap: 6px;
+  margin-top: 24px;
+  color: #6b6b6b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.compare-network-state code {
+  overflow-wrap: anywhere;
+  color: #1a1a1a;
 }
 
 .compare-account {
@@ -381,8 +433,36 @@ textarea:disabled {
   line-height: 1.5;
 }
 
-.compare-board:last-child .compare-result {
+.compare-result.success {
   color: #2f6f5e;
+}
+
+.compare-result.error {
+  color: #8a3b2f;
+}
+
+.compare-transaction {
+  margin: 16px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.compare-transaction div {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  padding-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.compare-transaction dt {
+  color: #6b6b6b;
+}
+
+.compare-transaction dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 760px) {

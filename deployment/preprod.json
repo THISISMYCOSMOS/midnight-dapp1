@@ -1,0 +1,16 @@
+{
+  "networkId": "preprod",
+  "contractAddress": "c14e788f9919636bee5d8cfe8febd671540858adfac4a66ec9f1ac8e29748855",
+  "txId": "00762b512473bfa778dc7894b6b3255d7b7bc968d59f95aed49fa125d762ff05d9",
+  "txHash": "4160115913f185752b600f89f9398c8d6d42adfd5fc587152977b35ee3e6184c",
+  "blockHeight": "1796506",
+  "blockHash": "6b588822ab6b34975a0abcee6aa4366af7ae5d08398dd96a04f53e661ce958da",
+  "blockTimestamp": 1784890590001,
+  "blockTimestampIso": "2026-07-24T10:56:30.001Z",
+  "indexerId": 510029,
+  "reviewerKey": "2d3becf302a725a8651e2ee9a47e0dda21873ad9d4f0eba87e3860ad7e716cbd",
+  "indexer": "https://indexer.preprod.midnight.network/api/v4/graphql",
+  "indexerWS": "wss://indexer.preprod.midnight.network/api/v4/graphql/ws",
+  "proofServer": "http://localhost:6300",
+  "status": "SUCCESS"
+}
