@@ -8,7 +8,8 @@
     "dev": "vite",
     "prebuild": "node scripts/sync-zk-assets.mjs",
     "build": "tsc --project tsconfig.json --noEmit && vite build",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "check:design": "node scripts/check-design.mjs"
   },
   "engines": {
     "node": ">=24.11.1"

@@ -221,7 +221,12 @@ CLI에서 웹으로 변경 확정(2026-07-22). 근거: 증명 생성 대기는 C
 > (unsafe는 공개 admin 키 대조, Merkle은 ZK로 신원 비노출). 자격자 3명을 한 브라우저에서 전환하는
 > **사용자 1·2·3 스위처**를 추가했다(지갑 1회 연결 후 리뷰어 비밀키만 교체 — Lace 재승인 없음).
 > URL `#secret=` 자동 수입은 제거했다(§Task C). `/deploy`는 실제 리뷰어 공개키 3개 입력으로 바꿨다.
-> **Preprod 배포**: 브라우저 `/deploy`+Lace로 3키 계약 `cf951445…`을 배포해 검증했다(옛 1키 계약 `c14e788…`은 폐기).
+> **Preprod 배포(최종)**: 브라우저 `/deploy`+Lace로 3키 계약
+> `d9643b895605a579f188ae0596c32580f60e6644d1089e713915870f2f6d1ba1`을 배포했다. 2026-07-25 확인:
+> 리뷰 1건, **데모 자격키 3/3 등록**, 원장 필드 `eligible·nullifiers·reviews`. `ui/.env.local`의
+> `VITE_CONTRACT_ADDRESS`가 이 주소를 가리킨다(옛 `cf951445…`·`c14e788…`은 폐기).
+> **온체인 리뷰는 삭제 불가**다. 테스트 회차를 새로 하려면 `?item=<라벨>`로 nullifier를 갈거나
+> (게시판 목록은 남는다) `/deploy`로 계약을 새로 배포한다.
 > 독립 운영자 **CLI 지갑은 2026-07-24에도 상태 스트림 0건(seen:0)으로 10분 타임아웃 재확인** —
 > 배포 경로는 브라우저 `/deploy`+Lace로 확정하고 CLI는 폴백·진단으로만 남긴다(§6.9).
 > **캐비엇**: 거래 수수료를 낸 지갑에 의한 온체인 역익명화는 범위 밖. 주장은 "계약 원장은 작성자를
@@ -244,7 +249,9 @@ CLI에서 웹으로 변경 확정(2026-07-22). 근거: 증명 생성 대기는 C
 | `contract/src/witnesses.ts` | 비밀키와 자격 Merkle 경로 witness 구현 | 실행 | ✅ TypeScript 검사·시뮬레이터 검증 |
 | `contract/src/index.ts` | 생성 컨트랙트와 witness 결합 | 실행 | ✅ TypeScript 빌드 |
 | `contract/src/test/` | 정상·중복·미자격·다른 상품 + unsafe/Merkle 동일 입력·스트레스 비교 | 실행 | ✅ Vitest 17건 통과 (2026-07-25 재실행) |
-| `ui/src/ComparisonDemo.tsx` | 정직한 대비: 작성자 키 노출(unsafe) vs 부재(Merkle), k=3 배너, 사용자 1·2·3 스위처, 미등록자 양쪽 차단 | 비교 | 🟨 빌드·타입 통과, 3키 계약 라이브 3유저 거래는 사용자 검증 중 |
+| `ui/src/ComparisonDemo.tsx` | 정직한 대비: 작성자 키 노출(unsafe) vs 부재(Merkle), k=3 배너, 사용자 1·2·3 스위처, 미등록자 양쪽 차단 | 비교 | 🟨 빌드·타입 통과, 3열 렌더 확인, 라이브 3유저 거래는 미검증 |
+| `ui/src/ProofTrace.tsx` | 세 번째 박스 `terminal`. 제출 1회를 두 계약(Merkle·Preprod / ownPublicKey·로컬 시뮬레이터)으로 나눠 기록. **실제 관측값만** 찍는다 | 비교 | 🟨 SSR 렌더로 4상태 확인 |
+| `ui/scripts/check-design.mjs` | 확정 목업 기준 디자인 검사(색 6 / 타이포 32·15·13 / 간격 8·16·32·64). `npm run check:design` | 설계 | ✅ 팔레트·타이포·이모지 0건, 간격 31건 미해결 |
 | `ui/src/demo-users.ts` | 데모 자격자 3명 비밀키(VITE_DEMO_SECRET_* 또는 localStorage). 파생키 = 배포 3키와 일치 검증 | 비교 | 🟨 빌드 통과 |
 | `ui/src/ReviewerEnrollment.tsx` | 실제 리뷰어 브라우저 공개키 등록 `/enroll`. 비밀키 접근은 이 파일에만 | 리뷰어 | 🟨 공개키 렌더·복사 확인, 실제 리뷰 거래 미검증 |
 | `ui/src/OperatorDeployment.tsx` | 실제 리뷰어 공개키 3개 입력 운영자 Lace 배포 `/deploy`(데모 3키 프리필). 난수 슬롯 폐기 | 실행 | 🟨 입력 검증·사전 점검 확인, 3키 계약 `cf951445…` 브라우저+Lace 배포 성공 |
@@ -692,6 +699,32 @@ DApp Connector 패턴을 따라 Lace가 거래를 balance/submit하는 `/deploy`
 삭제했다(2026-07-25)**. 따라서 온체인 역익명화 캐비엇은 **화면에 없고 문서와 구두
 설명에만 있다.** 발표에서 익명성을 말할 때 이 한 줄을 반드시 입으로 붙인다 — 화면이
 대신 말해주지 않는다.
+
+### 6.14 인덱서 WS 구독 첫 emit이 ~10초 — 게시판이 비어 보임 (2026-07-25)
+
+`/compare`의 Merkle 게시판이 "아직 리뷰가 없습니다"인데 제출은 중복으로 막히는 상태가
+나왔다. 원장을 직접 조회해 **온체인에는 리뷰 3건이 실제로 있음**을 확인했다
+(`contractAction` → `ContractCall`, block 1809696, state에 본문 문자열 존재).
+
+Preprod 실측(헤드리스, 같은 provider 코드):
+
+| 경로 | 소요 |
+|---|---|
+| `queryContractState` (HTTP) | 864 ~ 1372 ms |
+| `watchForDeployTxData` (WS) | 306 ms |
+| `contractStateObservable({type:'latest'}) 첫 emit` | **10110 ~ 11426 ms** |
+| `findDeployedContract` 전체 | 2271 ms |
+| `getVerifierKeys` | 72 ms |
+
+UI가 구독만 썼기 때문에 페이지 로드·제출 후 **10초 넘게 화면이 비어 있었다.** 버그가
+아니라 지연이었지만, 발표에서는 "안 올라간다"로 보인다.
+
+**수정**: `contractStates()`가 HTTP 조회·강제 재조회·WS 구독을 `merge`한다. 제출 성공
+직후 `ReviewApi.refresh()`가 즉시 재조회한다. **재측정: 첫 emit 2268ms, reviews=3,
+자격키 3/3.**
+
+**교훈**: `{type:'latest'}`가 "가장 최근 상태부터"라고 문서에 적혀 있어도 첫 전달까지의
+지연은 별개다. 화면에 보이는 상태를 구독 하나에만 걸지 않는다.
 
 ### 6.13 검증 안 한 진단을 수정안으로 제출 (2026-07-25)
 

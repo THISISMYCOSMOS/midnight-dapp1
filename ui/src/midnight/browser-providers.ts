@@ -32,6 +32,10 @@ import type {
 } from "./types";
 import type { ReviewPrivateState } from "@midnight-review/contract";
 
+// 우리가 직접 쓴, 사용자가 읽고 조치할 수 있는 오류. 라이브러리 원문 오류와 구분해
+// 화면에 그대로 띄우기 위한 표식이다(AGENTS.md §2.6: 내부 에러 문자열 노출 금지).
+export class WalletSetupError extends Error {}
+
 export type BrowserConnectionConfig = {
   readonly networkId: string;
   readonly contractAddress: ContractAddress;
@@ -66,32 +70,32 @@ const preprodIndexerWsUri =
 
 const assertPreprodRequest = (config: BrowserDeploymentConfig): void => {
   if (config.networkId !== "preprod") {
-    throw new Error("발표용 MVP는 Preprod 네트워크만 사용할 수 있습니다");
+    throw new WalletSetupError("발표용 MVP는 Preprod 네트워크만 사용할 수 있습니다");
   }
   if (
     config.indexerUri !== preprodIndexerUri ||
     config.indexerWsUri !== preprodIndexerWsUri
   ) {
-    throw new Error("공식 Preprod 인덱서 주소가 아닙니다");
+    throw new WalletSetupError("공식 Preprod 인덱서 주소가 아닙니다");
   }
 };
 
 const assertPreprodWallet = (configuration: Configuration): string => {
   if (configuration.networkId !== "preprod") {
-    throw new Error(
+    throw new WalletSetupError(
       `Lace 네트워크가 Preprod가 아닙니다: ${configuration.networkId}`,
     );
   }
 
   if (!configuration.proverServerUri) {
-    throw new Error("Lace에서 Proof Server 주소를 받지 못했습니다");
+    throw new WalletSetupError("Lace에서 Proof Server 주소를 받지 못했습니다");
   }
 
   let proofServerUrl: URL;
   try {
     proofServerUrl = new URL(configuration.proverServerUri);
   } catch {
-    throw new Error(
+    throw new WalletSetupError(
       `Lace Proof Server 주소가 올바르지 않습니다: ${configuration.proverServerUri}`,
     );
   }
@@ -113,7 +117,7 @@ const assertPreprodWallet = (configuration: Configuration): string => {
     !isRootPath
   ) {
     // 실제로 여기서 막혀 원인을 찾는 데 시간을 쓴 적이 있다. 무엇을 바꿔야 하는지까지 적는다.
-    throw new Error(
+    throw new WalletSetupError(
       `Lace의 Proof Server가 로컬이 아닙니다 (현재 ${configuration.proverServerUri}) — Lace 설정에서 http://127.0.0.1:6300 으로 바꾸세요`,
     );
   }
@@ -159,7 +163,7 @@ const connectToWallet = async (networkId: string): Promise<ConnectedAPI> => {
 
   if (!wallet) {
     const injected = injectedWalletSummary();
-    throw new Error(
+    throw new WalletSetupError(
       injected
         ? `호환되는 Midnight 지갑이 없습니다 — 발견: ${injected} / 필요: ${compatibleConnectorVersion}`
         : "Midnight 지갑 확장을 찾지 못했습니다 — Lace 설치·잠금 해제 후 새로고침하세요",
@@ -170,7 +174,7 @@ const connectToWallet = async (networkId: string): Promise<ConnectedAPI> => {
     wallet.connect(networkId),
     new Promise<never>((_, reject) =>
       window.setTimeout(
-        () => reject(new Error("지갑 연결 응답 시간이 초과되었습니다")),
+        () => reject(new WalletSetupError("지갑 연결 응답 시간이 초과되었습니다")),
         walletApprovalTimeoutMs,
       ),
     ),

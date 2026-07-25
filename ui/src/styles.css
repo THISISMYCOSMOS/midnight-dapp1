@@ -212,11 +212,11 @@ textarea:disabled {
 
 .setup-key {
   display: block;
-  margin-top: 24px;
-  padding: 12px;
+  margin-top: 32px;
+  padding: 8px;
   overflow-wrap: anywhere;
   border: 1px solid #e5e5e5;
-  background: #f8f8f8;
+  background: #ffffff;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -224,7 +224,7 @@ textarea:disabled {
 .setup-fields {
   display: grid;
   gap: 16px;
-  margin-top: 24px;
+  margin-top: 32px;
 }
 
 .setup-fields label {
@@ -247,7 +247,7 @@ textarea:disabled {
 }
 
 .setup-checks {
-  margin: 24px 0 0;
+  margin: 32px 0 0;
   border-bottom: 1px solid #e5e5e5;
 }
 
@@ -255,7 +255,7 @@ textarea:disabled {
   display: grid;
   grid-template-columns: 160px minmax(0, 1fr);
   gap: 16px;
-  padding: 12px 0;
+  padding: 8px 0;
   border-top: 1px solid #e5e5e5;
   font-size: 13px;
   line-height: 1.5;
@@ -274,25 +274,25 @@ textarea:disabled {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin-top: 24px;
+  margin-top: 32px;
   color: #6b6b6b;
   font-size: 13px;
   line-height: 1.5;
 }
 
 .setup-confirm input {
-  margin-top: 3px;
+  margin-top: 0;
 }
 
 .setup-result {
   margin-top: 32px;
-  padding-top: 24px;
+  padding-top: 32px;
   border-top: 1px solid #e5e5e5;
 }
 
 .setup-result p {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -304,7 +304,7 @@ textarea:disabled {
 .compare-page {
   width: min(1320px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 56px 0 72px;
+  padding: 64px 0;
 }
 
 .compare-hero {
@@ -328,17 +328,17 @@ textarea:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 .compare-user {
   min-height: 40px;
-  padding: 8px 18px;
+  padding: 8px 16px;
   border: 1px solid #a0a0a0;
   border-radius: 4px;
   color: #1a1a1a;
   background: #ffffff;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -355,7 +355,7 @@ textarea:disabled {
 }
 
 .compare-network-state {
-  margin: 20px 0 0;
+  margin: 16px 0 0;
   display: grid;
   gap: 8px;
 }
@@ -363,7 +363,7 @@ textarea:disabled {
 .compare-network-state > div {
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr);
-  gap: 12px;
+  gap: 8px;
   align-items: baseline;
   font-size: 13px;
   line-height: 1.5;
@@ -388,12 +388,12 @@ textarea:disabled {
 .compare-account button,
 .compare-reset {
   min-height: 40px;
-  padding: 8px 14px;
+  padding: 8px 16px;
   border: 1px solid #a0a0a0;
   border-radius: 4px;
   color: #1a1a1a;
   background: #ffffff;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
 }
 
@@ -405,7 +405,7 @@ textarea:disabled {
 
 .compare-label {
   display: block;
-  margin-top: 24px;
+  margin-top: 32px;
   font-size: 13px;
   font-weight: 600;
 }
@@ -418,8 +418,8 @@ textarea:disabled {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 8px;
+  margin-top: 32px;
 }
 
 .compare-actions .button,
@@ -436,13 +436,13 @@ textarea:disabled {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 32px;
-  margin-top: 48px;
+  margin-top: 64px;
 }
 
 .compare-board,
 .compare-trace {
   border-top: 3px solid #a0a0a0;
-  padding-top: 20px;
+  padding-top: 16px;
 }
 
 /* 강조는 논지가 걸린 한 곳(Merkle 게시판)에만 준다. */
@@ -460,6 +460,19 @@ textarea:disabled {
   list-style: none;
 }
 
+/* 한 회차 안에서 어느 계약의 단계인지 나누는 머리글. */
+.trace-group {
+  margin: 8px 0 0;
+  color: #6b6b6b;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.trace-step:first-child .trace-group {
+  margin-top: 0;
+}
+
 .trace-step {
   padding: 8px 0;
   border-bottom: 1px solid #e5e5e5;
@@ -468,7 +481,7 @@ textarea:disabled {
 .trace-row {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   align-items: baseline;
 }
 
@@ -481,7 +494,7 @@ textarea:disabled {
 .trace-status {
   flex-shrink: 0;
   color: #6b6b6b;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -490,7 +503,7 @@ textarea:disabled {
 }
 
 .trace-step.failed .trace-status {
-  color: #8a3b2f;
+  color: #1a1a1a;
 }
 
 .trace-step.skipped .trace-label,
@@ -499,56 +512,56 @@ textarea:disabled {
 }
 
 .trace-meta {
-  margin: 2px 0 0;
+  margin: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   color: #6b6b6b;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 .trace-ledger {
   margin: 16px 0 0;
-  padding-top: 12px;
+  padding-top: 8px;
   border-top: 1px solid #e5e5e5;
 }
 
 .trace-ledger dt {
   color: #6b6b6b;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .trace-ledger dd {
-  margin: 2px 0 0;
+  margin: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 
 .trace-note {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
   color: #a0a0a0;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
 .compare-board-header h2 {
-  margin: 6px 0 0;
-  font-size: 24px;
+  margin: 8px 0 0;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.3;
 }
 
 .compare-author-note {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.5;
 }
 
 .compare-author-note.exposed {
-  color: #8a3b2f;
+  color: #1a1a1a;
 }
 
 .compare-author-note.hidden {
@@ -556,15 +569,15 @@ textarea:disabled {
 }
 
 .compare-anon-set {
-  margin: 4px 0 0;
+  margin: 0;
   color: #6b6b6b;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
 .compare-review-list {
   min-height: 160px;
-  margin-top: 24px;
+  margin-top: 32px;
   border-bottom: 1px solid #e5e5e5;
 }
 
@@ -587,20 +600,23 @@ textarea:disabled {
 }
 
 .compare-review-author {
-  margin: 6px 0 0;
-  font-size: 12px;
+  margin: 8px 0 0;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 .compare-review-author.exposed {
-  color: #8a3b2f;
+  color: #6b6b6b;
 }
 
+/* 이 시스템에는 에러색이 없다(확정 목업에 빨강 0건). 위계는 대비로 만든다:
+   기본 #6b6b6b, 차단·실패 #1a1a1a(최대 대비), 성공만 유채색 #2f6f5e. */
 .compare-result {
   margin: 16px 0 0;
-  font-size: 14px;
+  color: #6b6b6b;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.5;
 }
@@ -610,7 +626,7 @@ textarea:disabled {
 }
 
 .compare-result.error {
-  color: #8a3b2f;
+  color: #1a1a1a;
 }
 
 .compare-transaction {
@@ -622,9 +638,9 @@ textarea:disabled {
 .compare-transaction div {
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr);
-  gap: 12px;
+  gap: 8px;
   padding-top: 8px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -664,7 +680,7 @@ textarea:disabled {
   }
 
   h1 {
-    font-size: 28px;
+    font-size: 32px;
   }
 
   .button {

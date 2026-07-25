@@ -23,7 +23,7 @@ const randomIdentity = (): Uint8Array =>
 
 // ownPublicKey 비교 기준선(unsafe-review.compact)은 리뷰어를 그 사람의 *공개키*로
 // 식별한다. 인가된 리뷰어의 공개키는 생성 시 ledger `admin` 슬롯에 기록되고, 제출할
-// 때마다 회로가 그 값을 평문으로 다시 읽어 대조한다. 즉 게시된 모든 글에는 공개 원장에서
+// 때마다 회로가 그 값을 평문으로 다시 읽어 대조한다. 즉 게시된 모든 글에는 온체인에서
 // 그대로 읽히는 작성자가 붙는다. 이것은 실제로 작동하는 접근제어다 — 다만 리뷰어를
 // 익명으로 인가할 방법이 없어 자격과 익명을 동시에 표현하지 못한다.
 //
@@ -65,6 +65,11 @@ export class UnsafeComparisonSession {
       body,
     ).context;
     return [...this.getUnsafeLedger().reviews];
+  }
+
+  // 시뮬레이터 상태에 쌓인 리뷰 수. 화면에 "게시됨"을 주장하지 않고 실제 값을 읽는다.
+  reviewCount(): number {
+    return [...this.getUnsafeLedger().reviews].length;
   }
 
   // admin이 아닌 임의 호출자로 제출을 시도한다. 실제 회로가

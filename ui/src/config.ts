@@ -15,6 +15,12 @@ const defaultItemId = (): Uint8Array => {
   return result;
 };
 
+const labelToItemId = (label: string): Uint8Array => {
+  const result = new Uint8Array(32);
+  result.set(new TextEncoder().encode(label).slice(0, 32));
+  return result;
+};
+
 const parseBytes32 = (value: string | undefined): Uint8Array => {
   if (!value) return defaultItemId();
   if (!/^[0-9a-fA-F]{64}$/.test(value)) {
@@ -23,6 +29,19 @@ const parseBytes32 = (value: string | undefined): Uint8Array => {
   return Uint8Array.from(value.match(/.{2}/g) ?? [], (byte) =>
     Number.parseInt(byte, 16),
   );
+};
+
+// 테스트용 상품 전환. nullifier는 (비밀키, itemId)로 파생되므로 itemId를 바꾸면
+// 중복 차단이 풀려 같은 계약에서 세 사용자가 다시 제출할 수 있다.
+// 주의: reviews 목록은 상품별이 아니라 계약 전역이라 이전 리뷰는 그대로 남는다.
+// 게시판까지 비우려면 /deploy로 계약을 새로 배포해야 한다(온체인 삭제는 불가능).
+//   /compare?item=test2   또는   /compare?item=<64자리 hex>
+const itemIdFromUrl = (): Uint8Array | undefined => {
+  const value = new URLSearchParams(window.location.search).get("item")?.trim();
+  if (!value) return undefined;
+  return /^[0-9a-fA-F]{64}$/.test(value)
+    ? parseBytes32(value.toLowerCase())
+    : labelToItemId(value);
 };
 
 const networkId = (
@@ -51,5 +70,5 @@ export const appConfig = {
   productName:
     (import.meta.env.VITE_PRODUCT_NAME as string | undefined) ??
     "무선 이어폰 XR-200",
-  itemId: parseBytes32(import.meta.env.VITE_PRODUCT_ID_HEX),
+  itemId: itemIdFromUrl() ?? parseBytes32(import.meta.env.VITE_PRODUCT_ID_HEX),
 };

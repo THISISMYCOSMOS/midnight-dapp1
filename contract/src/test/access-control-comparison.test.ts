@@ -97,7 +97,9 @@ describe("comparison stress", () => {
       ).toThrow("Reviewer is not eligible");
       expect([...merkle.getLedger().reviews]).toEqual([]);
     }
-  }, 30_000);
+    // 실측 4.9s / 10.0s / 14.6s로 3배까지 흔들린다(머신 부하). 30초는 여유가 2배뿐이라
+    // 실제로 한 번 초과했다. 형제 테스트와 같은 60초로 맞춘다 — 단언은 그대로다.
+  }, 60_000);
 
   it("preserves Merkle state across repeated failures and user switches", () => {
     const merkle = new ReviewSimulator(eligibleSecrets[0], eligibleSecrets);
