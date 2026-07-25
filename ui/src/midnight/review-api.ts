@@ -25,6 +25,20 @@ export type ReviewPublicState = {
   readonly reviews: readonly string[];
 };
 
+// 지갑 없이 읽는 게시판 상태. eligibleFlags는 조회한 파생키가 이 계약의 자격 트리에
+// 있는지이며, 리뷰어 본인 상태(ReviewAuthorState)와 달리 비밀키가 필요 없다.
+//
+// isEligible·hasNullifier는 마지막으로 관측한 원장 상태를 그대로 조회한다. 회로가
+// 하는 것과 같은 계산이지만 회로 내부를 들여다보는 것은 아니다 — 화면에서도 그렇게
+// 표기한다. ledgerFields는 이 계약의 실제 원장 필드 목록이며, 작성자 필드가 없다는
+// 사실을 주장이 아니라 관측으로 보이기 위한 것이다.
+export type ReviewBoardState = ReviewPublicState & {
+  readonly eligibleFlags: readonly boolean[];
+  readonly ledgerFields: readonly string[];
+  readonly isEligible: (reviewerKey: Uint8Array) => boolean;
+  readonly hasNullifier: (nullifier: Uint8Array) => boolean;
+};
+
 export type ReviewAuthorState = ReviewPublicState & {
   readonly eligible: boolean;
   readonly alreadyReviewed: boolean;
@@ -39,13 +53,25 @@ export type PublicTransactionRecord = {
 export const observeReviewState = (
   publicDataProvider: PublicDataProvider,
   contractAddress: ContractAddress,
-): Observable<ReviewPublicState> =>
+  reviewerKeys: readonly Uint8Array[] = [],
+): Observable<ReviewBoardState> =>
   publicDataProvider
     .contractStateObservable(contractAddress, { type: "latest" })
     .pipe(
-      map((contractState) => ({
-        reviews: [...ledger(contractState.data).reviews],
-      })),
+      map((contractState) => {
+        const currentLedger = ledger(contractState.data);
+        return {
+          reviews: [...currentLedger.reviews],
+          eligibleFlags: reviewerKeys.map(
+            (key) => currentLedger.eligible.findPathForLeaf(key) !== undefined,
+          ),
+          ledgerFields: Object.keys(currentLedger).sort(),
+          isEligible: (key: Uint8Array) =>
+            currentLedger.eligible.findPathForLeaf(key) !== undefined,
+          hasNullifier: (nullifier: Uint8Array) =>
+            currentLedger.nullifiers.member(nullifier),
+        };
+      }),
     );
 
 export class ReviewApi {

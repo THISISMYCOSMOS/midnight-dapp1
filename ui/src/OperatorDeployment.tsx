@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { appConfig } from "./config";
+import { demoUsers } from "./demo-users";
 import {
   deployReviewApi,
   inspectPreprodWallet,
@@ -19,11 +20,6 @@ const fromReviewerKey = (value: string): Uint8Array => {
   );
 };
 
-const randomReviewerKey = (): string =>
-  Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
-
 const initialReviewerKey = (): string => {
   const value =
     new URLSearchParams(window.location.search).get("reviewerKey") ?? "";
@@ -36,10 +32,12 @@ const messageFor = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
 export const OperatorDeployment = () => {
+  // 데모 편의: 세 자격키 입력을 데모 리뷰어 3명의 공개 파생키로 기본 채운다.
+  // (`/compare`의 사용자 1·2·3과 동일한 키. 값은 수정 가능.)
   const [reviewerKeys, setReviewerKeys] = useState(() => [
-    initialReviewerKey(),
-    randomReviewerKey(),
-    randomReviewerKey(),
+    initialReviewerKey() || demoUsers[0].reviewerKeyHex,
+    demoUsers[1].reviewerKeyHex,
+    demoUsers[2].reviewerKeyHex,
   ]);
   const [checkingWallet, setCheckingWallet] = useState(false);
   const [walletCheck, setWalletCheck] = useState<PreprodWalletCheck>();
@@ -131,28 +129,18 @@ export const OperatorDeployment = () => {
         <p className="setup-eyebrow">운영자 설정</p>
         <h1>Lace로 리뷰 계약 배포</h1>
         <p className="setup-copy">
-          실제 reviewerKey 1개만 입력합니다. 나머지 두 자리는 발표용 난수 키로
-          자동 채웁니다.
+          대응 비밀키가 있는 실제 리뷰어 공개키 3개. 난수 키는 쓰지 않습니다.
         </p>
         <div className="setup-fields">
-          <label>
-            실제 리뷰어 공개키
-            <input
-              aria-label="실제 리뷰어 공개키"
-              autoComplete="off"
-              spellCheck={false}
-              value={reviewerKeys[0]}
-              onChange={(event) => updateKey(0, event.target.value)}
-            />
-          </label>
-          {reviewerKeys.slice(1).map((key, index) => (
+          {reviewerKeys.map((key, index) => (
             <label key={index}>
-              발표용 난수 키 {index + 2}
+              실제 리뷰어 공개키 {index + 1}
               <input
-                aria-label={`발표용 난수 키 ${index + 2}`}
-                readOnly
+                aria-label={`실제 리뷰어 공개키 ${index + 1}`}
+                autoComplete="off"
                 spellCheck={false}
                 value={key}
+                onChange={(event) => updateKey(index, event.target.value)}
               />
             </label>
           ))}

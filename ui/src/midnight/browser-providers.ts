@@ -112,8 +112,9 @@ const assertPreprodWallet = (configuration: Configuration): string => {
     proofServerUrl.password !== "" ||
     !isRootPath
   ) {
+    // 실제로 여기서 막혀 원인을 찾는 데 시간을 쓴 적이 있다. 무엇을 바꿔야 하는지까지 적는다.
     throw new Error(
-      `Lace Proof Server가 로컬 6300이 아닙니다: ${configuration.proverServerUri}`,
+      `Lace의 Proof Server가 로컬이 아닙니다 (현재 ${configuration.proverServerUri}) — Lace 설정에서 http://127.0.0.1:6300 으로 바꾸세요`,
     );
   }
 
@@ -131,8 +132,24 @@ const firstCompatibleWallet = (): InitialAPI | undefined => {
   );
 };
 
+// 확장이 주입한 커넥터 목록을 그대로 보고한다. "못 찾았다"만으로는 미설치·잠금·
+// 버전 불일치를 구분할 수 없어 발표 직전에 원인을 못 찾는다.
+const injectedWalletSummary = (): string => {
+  if (!window.midnight) return "";
+  return Object.entries(window.midnight)
+    .map(([name, wallet]) => {
+      const version =
+        wallet && typeof wallet === "object" && "apiVersion" in wallet
+          ? String((wallet as InitialAPI).apiVersion)
+          : "버전 미상";
+      return `${name}@${version}`;
+    })
+    .join(", ");
+};
+
 const connectToWallet = async (networkId: string): Promise<ConnectedAPI> => {
-  const deadline = Date.now() + 1_000;
+  // 확장 주입이 늦는 경우가 있어 3초까지 기다린다(하드 새로고침 직후 클릭).
+  const deadline = Date.now() + 3_000;
   let wallet = firstCompatibleWallet();
 
   while (!wallet && Date.now() < deadline) {
@@ -141,7 +158,12 @@ const connectToWallet = async (networkId: string): Promise<ConnectedAPI> => {
   }
 
   if (!wallet) {
-    throw new Error("Midnight Lace 지갑을 찾지 못했습니다");
+    const injected = injectedWalletSummary();
+    throw new Error(
+      injected
+        ? `호환되는 Midnight 지갑이 없습니다 — 발견: ${injected} / 필요: ${compatibleConnectorVersion}`
+        : "Midnight 지갑 확장을 찾지 못했습니다 — Lace 설치·잠금 해제 후 새로고침하세요",
+    );
   }
 
   const connection = await Promise.race([
@@ -157,14 +179,33 @@ const connectToWallet = async (networkId: string): Promise<ConnectedAPI> => {
   return connection;
 };
 
-const connectReviewProviders = async (
+type ReviewWalletContext = {
+  readonly connectedApi: ConnectedAPI;
+  readonly proofServerUri: string;
+  readonly addresses: Awaited<
+    ReturnType<ConnectedAPI["getShieldedAddresses"]>
+  >;
+};
+
+// 지갑을 한 번 연결한다. 이 결과(connectedApi)를 재사용하면 사용자 전환 때
+// Lace 승인을 다시 받지 않아도 된다.
+const connectReviewWallet = async (
   config: BrowserDeploymentConfig,
-): Promise<ReviewProviders> => {
+): Promise<ReviewWalletContext> => {
   assertPreprodRequest(config);
   const connectedApi = await connectToWallet(config.networkId);
   const walletConfig = await connectedApi.getConfiguration();
   const proofServerUri = assertPreprodWallet(walletConfig);
   const addresses = await connectedApi.getShieldedAddresses();
+  return { connectedApi, proofServerUri, addresses };
+};
+
+// join 때마다 새 provider를 만든다 — 리뷰어마다 private state를 격리하기 위해서다.
+// 지갑 연결은 재사용하므로 Lace 팝업은 다시 뜨지 않는다.
+const buildReviewProviders = (
+  config: BrowserDeploymentConfig,
+  wallet: ReviewWalletContext,
+): ReviewProviders => {
   const zkConfigProvider = new FetchZkConfigProvider<ReviewCircuitKeys>(
     window.location.origin,
     fetch.bind(window),
@@ -178,7 +219,7 @@ const connectReviewProviders = async (
     privateStateProvider,
     zkConfigProvider,
     proofProvider: httpClientProofProvider(
-      proofServerUri,
+      wallet.proofServerUri,
       zkConfigProvider,
     ),
     publicDataProvider: createPublicDataProvider(
@@ -186,13 +227,14 @@ const connectReviewProviders = async (
       config.indexerWsUri,
     ),
     walletProvider: {
-      getCoinPublicKey: () => addresses.shieldedCoinPublicKey,
-      getEncryptionPublicKey: () => addresses.shieldedEncryptionPublicKey,
+      getCoinPublicKey: () => wallet.addresses.shieldedCoinPublicKey,
+      getEncryptionPublicKey: () =>
+        wallet.addresses.shieldedEncryptionPublicKey,
       balanceTx: async (
         transaction: UnboundTransaction,
         _ttl?: Date,
       ): Promise<FinalizedTransaction> => {
-        const balanced = await connectedApi.balanceUnsealedTransaction(
+        const balanced = await wallet.connectedApi.balanceUnsealedTransaction(
           toHex(transaction.serialize()),
         );
         return Transaction.deserialize<SignatureEnabled, Proof, Binding>(
@@ -207,12 +249,19 @@ const connectReviewProviders = async (
       submitTx: async (
         transaction: FinalizedTransaction,
       ): Promise<TransactionId> => {
-        await connectedApi.submitTransaction(toHex(transaction.serialize()));
+        await wallet.connectedApi.submitTransaction(
+          toHex(transaction.serialize()),
+        );
         return transaction.identifiers()[0];
       },
     },
   };
 };
+
+const connectReviewProviders = async (
+  config: BrowserDeploymentConfig,
+): Promise<ReviewProviders> =>
+  buildReviewProviders(config, await connectReviewWallet(config));
 
 export const inspectPreprodWallet = async (
   config: BrowserDeploymentConfig,
@@ -242,6 +291,27 @@ export const connectReviewApi = async (
     secretKey,
     config.itemId,
   );
+};
+
+// 지갑을 한 번만 연결하고, 이후 리뷰어 비밀키만 바꿔가며 join한다.
+// 데모에서 사용자 1·2·3을 전환할 때 Lace 승인을 반복하지 않기 위한 것이다.
+export type ReviewSession = {
+  readonly join: (secretKey: Uint8Array) => Promise<ReviewApi>;
+};
+
+export const connectReviewSession = async (
+  config: BrowserConnectionConfig,
+): Promise<ReviewSession> => {
+  const wallet = await connectReviewWallet(config);
+  return {
+    join: (secretKey: Uint8Array) =>
+      ReviewApi.join(
+        buildReviewProviders(config, wallet),
+        config.contractAddress,
+        secretKey,
+        config.itemId,
+      ),
+  };
 };
 
 export const deployReviewApi = async (

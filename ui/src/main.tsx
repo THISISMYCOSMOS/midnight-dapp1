@@ -9,12 +9,10 @@ import { App } from "./App";
 import { ComparisonDemo } from "./ComparisonDemo";
 import { OperatorDeployment } from "./OperatorDeployment";
 import { ReviewerEnrollment } from "./ReviewerEnrollment";
-import { consumeImportedBrowserSecret } from "./browser-secret";
 import { appConfig } from "./config";
 import "./styles.css";
 
 setNetworkId(appConfig.networkId);
-consumeImportedBrowserSecret(appConfig.contractAddress ?? "unconfigured");
 
 const RootApp =
   window.location.pathname === "/compare"

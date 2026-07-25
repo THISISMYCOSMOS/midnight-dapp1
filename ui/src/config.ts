@@ -31,9 +31,11 @@ const networkId = (
 
 export const appConfig = {
   networkId,
+  // URL의 ?contract= 를 우선한다. env 값은 기본 배포 주소일 뿐이며, 새 계약을
+  // 명시적으로 가리키려는 URL 파라미터가 이를 덮어써야 한다.
   contractAddress: (
-    import.meta.env.VITE_CONTRACT_ADDRESS ||
     new URLSearchParams(window.location.search).get("contract") ||
+    import.meta.env.VITE_CONTRACT_ADDRESS ||
     undefined
   ) as
     | ContractAddress
