@@ -1,0 +1,27 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1446
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,Noto Sans CJK KR,44,&H00F2F2F2,&H00F2F2F2,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,5,60,60,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.30,0:00:02.90,Cap,,0,0,0,,{\pos(960,1376)}자격 리뷰어 공개키 3개로 계약을 Preprod에 올린다
+Dialogue: 0,0:00:03.30,0:00:06.80,Cap,,0,0,0,,{\pos(960,1376)}리뷰는 써 뒀다. 먼저 트리에 없는 키로 눌러본다
+Dialogue: 0,0:00:07.20,0:00:10.40,Cap,,0,0,0,,{\pos(960,1376)}양쪽 다 막힌다\N왼쪽은 공개된 admin 키와 대조, 오른쪽은 회로가 안 돈다
+Dialogue: 0,0:00:10.80,0:00:14.60,Cap,,0,0,0,,{\pos(960,1376)}이번엔 자격 있는 키로 제출한다
+Dialogue: 0,0:00:15.20,0:00:19.20,Cap,,0,0,0,,{\pos(960,1376)}증명 생성 29.5초 · 6배속
+Dialogue: 0,0:00:19.80,0:00:23.40,Cap,,0,0,0,,{\pos(960,1376)}블록 1811148에 확정. 오른쪽 원장엔 작성자가 없다
+Dialogue: 0,0:00:23.80,0:00:27.80,Cap,,0,0,0,,{\pos(960,1376)}왼쪽엔 작성자 공개키가 그대로 남는다\N자격은 되지만 익명이 안 된다
+Dialogue: 0,0:00:28.20,0:00:30.40,Cap,,0,0,0,,{\pos(960,1376)}같은 사람이 한 번 더 쓴다
+Dialogue: 0,0:00:30.80,0:00:36.60,Cap,,0,0,0,,{\pos(960,1376)}nullifier가 553ms 만에 잡아낸다\N왼쪽은 중복 검사가 없어 그대로 또 올라간다
+Dialogue: 0,0:00:37.20,0:00:41.20,Cap,,0,0,0,,{\pos(960,1376)}사용자 2로 전환. 비밀키만 바뀐다 — 자격자는 3명이다
+Dialogue: 0,0:00:41.60,0:00:45.00,Cap,,0,0,0,,{\pos(960,1376)}증명 생성 30.9초 · 8배속
+Dialogue: 0,0:00:45.50,0:00:50.50,Cap,,0,0,0,,{\pos(960,1376)}블록 1811157에 확정. 두 번째 리뷰도 작성자 없이 올라간다
+Dialogue: 0,0:00:51.00,0:00:53.50,Cap,,0,0,0,,{\pos(960,1376)}왼쪽엔 또 같은 작성자 키가 붙는다
+Dialogue: 0,0:00:53.90,0:00:58.50,Cap,,0,0,0,,{\pos(960,1376)}사용자 2의 중복도 같은 방식으로 막힌다\N원장이 아는 건 nullifier뿐이다
