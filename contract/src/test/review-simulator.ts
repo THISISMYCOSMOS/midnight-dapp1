@@ -26,6 +26,7 @@ export class ReviewSimulator {
   constructor(
     activeSecretKey: Uint8Array,
     eligibleSecretKeys: readonly Uint8Array[],
+    productId: Uint8Array,
   ) {
     if (eligibleSecretKeys.length !== 3) {
       throw new Error("The demo constructor requires exactly three eligible keys");
@@ -42,6 +43,7 @@ export class ReviewSimulator {
           "0".repeat(64),
         ),
         initialEligible,
+        productId,
       );
 
     this.circuitContext = {
@@ -72,10 +74,9 @@ export class ReviewSimulator {
     return pureCircuits.deriveNullifier(secretKey, itemId);
   }
 
-  submitReview(itemId: Uint8Array, body: string): Ledger {
+  submitReview(body: string): Ledger {
     this.circuitContext = this.contract.impureCircuits.submitReview(
       this.circuitContext,
-      itemId,
       body,
     ).context;
     return this.getLedger();

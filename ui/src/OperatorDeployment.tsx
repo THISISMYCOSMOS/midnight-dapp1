@@ -66,7 +66,6 @@ export const OperatorDeployment = () => {
         networkId: appConfig.networkId,
         indexerUri: appConfig.indexerUri,
         indexerWsUri: appConfig.indexerWsUri,
-        itemId: appConfig.itemId,
       });
       setWalletCheck(result);
     } catch (error) {

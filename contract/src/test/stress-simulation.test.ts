@@ -2,9 +2,9 @@
 //
 // 스트레스·시뮬레이션 테스트. 발표 데모의 핵심 불변식을 실제 컴파일된 회로로 검증한다:
 //   - k=3 자격 트리에서 세 자격자 모두 게시 / 미등록자 차단
-//   - nullifier: 사용자·상품별 1회, 사용자 전환·상품 전환은 독립
+//   - nullifier: 계약에 고정된 상품별 1회, 다른 상품은 별도 계약으로 독립
 //   - 파생키·nullifier 충돌 없음
-//   - ownPublicKey 기준선(Q2): 등록된 작성자만 게시(신원 노출), 미등록 호출자는 차단, 중복 방지 없음
+//   - ownPublicKey 기준선(Q2): 공개 컨텍스트 값을 공개 admin과 비교, 키 소유권 검증 없음
 
 import {
   createCircuitContext,
@@ -34,20 +34,21 @@ const keyOf = (n: number): Uint8Array => {
   return a;
 };
 
-const hex = (v: Uint8Array): string => Buffer.from(v).toString("hex");
+const hex = (value: Uint8Array): string =>
+  Array.from(value, (byte) => byte.toString(16).padStart(2, "0")).join("");
 
 type UnsafeState = Record<string, never>;
 
 const newUnsafe = (
-  adminKey: Uint8Array,
+  adminValue: Uint8Array,
 ): { contract: UnsafeContract<UnsafeState>; ctx: CircuitContext<UnsafeState> } => {
   const contract = new UnsafeContract<UnsafeState>({});
   const init = contract.initialState(
-    createConstructorContext<UnsafeState>({}, { bytes: adminKey }),
+    createConstructorContext<UnsafeState>({}, { bytes: adminValue }),
   );
   const ctx = createCircuitContext(
     sampleContractAddress(),
-    emptyZswapLocalState({ bytes: adminKey }),
+    emptyZswapLocalState({ bytes: adminValue }),
     init.currentContractState,
     init.currentPrivateState,
   );
@@ -60,19 +61,19 @@ describe("stress: Merkle 3-user demo flow", () => {
       const base = round * 1000;
       const eligible = [keyOf(base + 1), keyOf(base + 2), keyOf(base + 3)];
       const item = keyOf(base + 100);
-      const sim = new ReviewSimulator(eligible[0], eligible);
+      const sim = new ReviewSimulator(eligible[0], eligible, item);
 
       // 세 자격자가 같은 상품에 각각 한 번씩 게시 → 리뷰 3건.
       eligible.forEach((secret, index) => {
         sim.switchUser(secret);
-        sim.submitReview(item, `r${round}-u${index}`);
+        sim.submitReview(`r${round}-u${index}`);
       });
       expect(sim.getLedger().reviews.length()).toBe(3n);
 
       // 같은 자격자의 재작성은 nullifier로 차단 (리뷰 수 불변).
       eligible.forEach((secret) => {
         sim.switchUser(secret);
-        expect(() => sim.submitReview(item, "중복")).toThrow(
+        expect(() => sim.submitReview("중복")).toThrow(
           "Review already submitted for this item",
         );
       });
@@ -80,20 +81,34 @@ describe("stress: Merkle 3-user demo flow", () => {
 
       // 트리에 없는 키는 차단.
       sim.switchUser(keyOf(base + 500));
-      expect(() => sim.submitReview(item, "미등록")).toThrow(
+      expect(() => sim.submitReview("미등록")).toThrow(
         "Reviewer is not eligible",
       );
 
-      // 같은 자격자가 다른 상품에는 게시 가능 (nullifier가 상품별로 다름).
-      sim.switchUser(eligible[0]);
-      sim.submitReview(keyOf(base + 200), "다른 상품");
-      expect(sim.getLedger().reviews.length()).toBe(4n);
+      // 다른 상품은 별도 계약이며, 같은 자격자의 nullifier도 상품별로 다르다.
+      const otherItem = keyOf(base + 200);
+      const otherProduct = new ReviewSimulator(
+        eligible[0],
+        eligible,
+        otherItem,
+      );
+      otherProduct.submitReview("다른 상품");
+      expect(otherProduct.getLedger().reviews.length()).toBe(1n);
+      expect(
+        sim.nullifier(eligible[0], sim.getLedger().productId),
+      ).not.toEqual(
+        otherProduct.nullifier(
+          eligible[0],
+          otherProduct.getLedger().productId,
+        ),
+      );
 
       // 원장은 절대 작성자(reviewerKey)를 노출하지 않는다.
       expect("reviewerKey" in sim.getLedger()).toBe(false);
       expect(Object.keys(sim.getLedger()).sort()).toEqual([
         "eligible",
         "nullifiers",
+        "productId",
         "reviews",
       ]);
     }
@@ -103,7 +118,11 @@ describe("stress: Merkle 3-user demo flow", () => {
     for (let round = 0; round < 20; round += 1) {
       const base = round * 10_000;
       const eligible = [keyOf(base + 1), keyOf(base + 2), keyOf(base + 3)];
-      const sim = new ReviewSimulator(eligible[0], eligible);
+      const sim = new ReviewSimulator(
+        eligible[0],
+        eligible,
+        keyOf(base + 1_000),
+      );
       const tree = sim.getLedger().eligible;
 
       for (const secret of eligible) {
@@ -155,18 +174,19 @@ describe("stress: derivation collision-freedom", () => {
   });
 });
 
-describe("stress: ownPublicKey baseline (Q2 honest behavior)", () => {
-  it("registered author posts with exposed identity; 300 outsiders all blocked", () => {
+describe("stress: ownPublicKey public-value baseline", () => {
+  it("matching public value posts; 300 different values are blocked", () => {
     const admin = keyOf(21);
     const { contract, ctx } = newUnsafe(admin);
 
-    // 등록된 작성자(=admin)가 게시 → 성공, 신원(admin 키)이 원장에 노출.
+    // 같은 공개 컨텍스트 값이면 성공하고 admin 값이 원장에 노출된다.
+    // 이 비교는 호출자가 키를 소유했다는 사실을 증명하지 않는다.
     const posted = contract.impureCircuits.submitReview(ctx, "정품 후기").context;
     const ledger = unsafeLedger(posted.currentQueryContext.state);
     expect([...ledger.reviews]).toEqual(["정품 후기"]);
     expect(hex(ledger.admin.bytes)).toBe(hex(admin));
 
-    // 미등록 호출자 300명 전부 차단, 원장 불변 (attemptOutsider 비변형성도 함께 확인).
+    // 서로 다른 공개 값 300개는 전부 차단되고 원장은 변하지 않는다.
     for (let n = 0; n < 300; n += 1) {
       const outsiderCtx: CircuitContext<UnsafeState> = {
         ...posted,
@@ -176,14 +196,14 @@ describe("stress: ownPublicKey baseline (Q2 honest behavior)", () => {
       };
       expect(() =>
         contract.impureCircuits.submitReview(outsiderCtx, `침입 ${n}`),
-      ).toThrow("Only the registered reviewer can submit");
+      ).toThrow("Public key value does not match admin");
     }
     expect(unsafeLedger(posted.currentQueryContext.state).reviews.length()).toBe(
       1n,
     );
   }, 60_000);
 
-  it("has no duplicate prevention: registered author can repost the same body", () => {
+  it("has no duplicate prevention for a matching public value", () => {
     const admin = keyOf(42);
     const { contract, ctx } = newUnsafe(admin);
     let current = ctx;

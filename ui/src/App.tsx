@@ -123,7 +123,6 @@ export const App = () => {
           contractAddress: appConfig.contractAddress,
           indexerUri: appConfig.indexerUri,
           indexerWsUri: appConfig.indexerWsUri,
-          itemId: appConfig.itemId,
         },
         loadOrCreateBrowserSecret(
           appConfig.contractAddress,

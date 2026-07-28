@@ -12,15 +12,11 @@ export type Witnesses<PS> = {
 }
 
 export type ImpureCircuits<PS> = {
-  submitReview(context: __compactRuntime.CircuitContext<PS>,
-               itemId_0: Uint8Array,
-               body_0: string): __compactRuntime.CircuitResults<PS, []>;
+  submitReview(context: __compactRuntime.CircuitContext<PS>, body_0: string): __compactRuntime.CircuitResults<PS, []>;
 }
 
 export type ProvableCircuits<PS> = {
-  submitReview(context: __compactRuntime.CircuitContext<PS>,
-               itemId_0: Uint8Array,
-               body_0: string): __compactRuntime.CircuitResults<PS, []>;
+  submitReview(context: __compactRuntime.CircuitContext<PS>, body_0: string): __compactRuntime.CircuitResults<PS, []>;
 }
 
 export type PureCircuits = {
@@ -34,9 +30,7 @@ export type Circuits<PS> = {
   deriveNullifier(context: __compactRuntime.CircuitContext<PS>,
                   sk_0: Uint8Array,
                   itemId_0: Uint8Array): __compactRuntime.CircuitResults<PS, Uint8Array>;
-  submitReview(context: __compactRuntime.CircuitContext<PS>,
-               itemId_0: Uint8Array,
-               body_0: string): __compactRuntime.CircuitResults<PS, []>;
+  submitReview(context: __compactRuntime.CircuitContext<PS>, body_0: string): __compactRuntime.CircuitResults<PS, []>;
 }
 
 export type Ledger = {
@@ -48,6 +42,7 @@ export type Ledger = {
     pathForLeaf(index_0: bigint, leaf_0: Uint8Array): __compactRuntime.MerkleTreePath<Uint8Array>;
     findPathForLeaf(leaf_0: Uint8Array): __compactRuntime.MerkleTreePath<Uint8Array> | undefined
   };
+  readonly productId: Uint8Array;
   nullifiers: {
     isEmpty(): boolean;
     size(): bigint;
@@ -73,7 +68,8 @@ export declare class Contract<PS = any, W extends Witnesses<PS> = Witnesses<PS>>
   provableCircuits: ProvableCircuits<PS>;
   constructor(witnesses: W);
   initialState(context: __compactRuntime.ConstructorContext<PS>,
-               initialEligible_0: Uint8Array[]): __compactRuntime.ConstructorResult<PS>;
+               initialEligible_0: Uint8Array[],
+               initialProductId_0: Uint8Array): __compactRuntime.ConstructorResult<PS>;
 }
 
 export declare function ledger(state: __compactRuntime.StateValue | __compactRuntime.ChargedState): Ledger;

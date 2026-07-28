@@ -45,6 +45,7 @@ export type ReviewPublicState = {
 // 표기한다. ledgerFields는 이 계약이 실제로 저장하는 필드 목록이며, 작성자 필드가 없다는
 // 사실을 주장이 아니라 관측으로 보이기 위한 것이다.
 export type ReviewBoardState = ReviewPublicState & {
+  readonly productId: Uint8Array;
   readonly eligibleFlags: readonly boolean[];
   readonly ledgerFields: readonly string[];
   readonly isEligible: (reviewerKey: Uint8Array) => boolean;
@@ -96,6 +97,7 @@ export const observeReviewState = (
       const currentLedger = ledger(contractState.data);
       return {
         reviews: [...currentLedger.reviews],
+        productId: currentLedger.productId,
         eligibleFlags: reviewerKeys.map(
           (key) => currentLedger.eligible.findPathForLeaf(key) !== undefined,
         ),
@@ -115,7 +117,6 @@ export class ReviewApi {
   private constructor(
     private readonly deployedContract: DeployedReviewContract,
     providers: ReviewProviders,
-    private readonly itemId: Uint8Array,
     privateState: ReviewPrivateState,
   ) {
     this.state$ = contractStates(
@@ -131,7 +132,7 @@ export class ReviewApi {
           );
           const nullifier = pureCircuits.deriveNullifier(
             privateState.secretKey,
-            itemId,
+            currentLedger.productId,
           );
 
           return {
@@ -166,7 +167,7 @@ export class ReviewApi {
 
   async submitReview(body: string): Promise<PublicTransactionRecord> {
     const { public: finalized } =
-      await this.deployedContract.callTx.submitReview(this.itemId, body);
+      await this.deployedContract.callTx.submitReview(body);
     this.refresh();
     return {
       txId: finalized.txId,
@@ -182,21 +183,23 @@ export class ReviewApi {
     itemId: Uint8Array,
   ): Promise<ReviewApi> {
     const privateState = createReviewPrivateState(deploymentPrivateStateSecret);
-    const deployedContract = await deployContract(providers, {
-      compiledContract: ReviewContract,
-      privateStateId: reviewPrivateStateKey,
-      initialPrivateState: privateState,
-      args: [[...initialEligible]],
-    });
+    const deployedContract = await deployContract<ReviewCompiledContract>(
+      providers,
+      {
+        compiledContract: ReviewContract,
+        privateStateId: reviewPrivateStateKey,
+        initialPrivateState: privateState,
+        args: [[...initialEligible], itemId],
+      },
+    );
 
-    return new ReviewApi(deployedContract, providers, itemId, privateState);
+    return new ReviewApi(deployedContract, providers, privateState);
   }
 
   static async join(
     providers: ReviewProviders,
     contractAddress: ContractAddress,
     secretKey: Uint8Array,
-    itemId: Uint8Array,
   ): Promise<ReviewApi> {
     const privateState = createReviewPrivateState(secretKey);
     const deployedContract = await findDeployedContract<ReviewCompiledContract>(
@@ -209,6 +212,6 @@ export class ReviewApi {
       },
     );
 
-    return new ReviewApi(deployedContract, providers, itemId, privateState);
+    return new ReviewApi(deployedContract, providers, privateState);
   }
 }

@@ -213,7 +213,7 @@ export class Contract {
                                                                                                                                 alignment: _descriptor_9.alignment() } }] } },
                                                                                                      { popeq: { cached: false,
                                                                                                                 result: undefined } }]).value)),
-                            'Only the registered reviewer can submit');
+                            'Public key value does not match admin');
     __compactRuntime.queryLedgerState(context,
                                       partialProofData,
                                       [

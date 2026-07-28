@@ -15,9 +15,13 @@ const itemB = bytes(11);
 
 describe("Review smart contract", () => {
   it("accepts one review from an eligible user", () => {
-    const simulator = new ReviewSimulator(eligibleSecrets[0], eligibleSecrets);
+    const simulator = new ReviewSimulator(
+      eligibleSecrets[0],
+      eligibleSecrets,
+      itemA,
+    );
 
-    const ledger = simulator.submitReview(itemA, "배송이 빨랐습니다");
+    const ledger = simulator.submitReview("배송이 빨랐습니다");
 
     expect([...ledger.reviews]).toEqual(["배송이 빨랐습니다"]);
     expect(
@@ -28,27 +32,59 @@ describe("Review smart contract", () => {
   });
 
   it("rejects a second review for the same item", () => {
-    const simulator = new ReviewSimulator(eligibleSecrets[0], eligibleSecrets);
-    simulator.submitReview(itemA, "첫 번째 리뷰");
+    const simulator = new ReviewSimulator(
+      eligibleSecrets[0],
+      eligibleSecrets,
+      itemA,
+    );
+    simulator.submitReview("첫 번째 리뷰");
 
-    expect(() => simulator.submitReview(itemA, "두 번째 리뷰")).toThrow(
+    expect(() => simulator.submitReview("두 번째 리뷰")).toThrow(
       "Review already submitted for this item",
     );
   });
 
   it("rejects a user outside the eligibility tree", () => {
-    const simulator = new ReviewSimulator(bytes(9), eligibleSecrets);
+    const simulator = new ReviewSimulator(bytes(9), eligibleSecrets, itemA);
 
-    expect(() => simulator.submitReview(itemA, "미자격 리뷰")).toThrow(
+    expect(() => simulator.submitReview("미자격 리뷰")).toThrow(
       "Reviewer is not eligible",
     );
   });
 
-  it("allows the same eligible user to review a different item", () => {
-    const simulator = new ReviewSimulator(eligibleSecrets[0], eligibleSecrets);
-    simulator.submitReview(itemA, "상품 A 리뷰");
-    const ledger = simulator.submitReview(itemB, "상품 B 리뷰");
+  it("derives different nullifiers for separate product contracts", () => {
+    const productA = new ReviewSimulator(
+      eligibleSecrets[0],
+      eligibleSecrets,
+      itemA,
+    );
+    const productB = new ReviewSimulator(
+      eligibleSecrets[0],
+      eligibleSecrets,
+      itemB,
+    );
 
-    expect([...ledger.reviews]).toEqual(["상품 B 리뷰", "상품 A 리뷰"]);
+    productA.submitReview("상품 A 리뷰");
+    productB.submitReview("상품 B 리뷰");
+
+    expect(
+      productA.nullifier(eligibleSecrets[0], productA.getLedger().productId),
+    ).not.toEqual(
+      productB.nullifier(eligibleSecrets[0], productB.getLedger().productId),
+    );
+    expect([...productA.getLedger().reviews]).toEqual(["상품 A 리뷰"]);
+    expect([...productB.getLedger().reviews]).toEqual(["상품 B 리뷰"]);
+  });
+
+  it("rejects deployment with duplicate eligible reviewer keys", () => {
+    const duplicateSecrets = [
+      eligibleSecrets[0],
+      eligibleSecrets[0],
+      eligibleSecrets[2],
+    ];
+
+    expect(
+      () => new ReviewSimulator(eligibleSecrets[0], duplicateSecrets, itemA),
+    ).toThrow("Eligible reviewer keys must be distinct");
   });
 });

@@ -30,8 +30,8 @@ const ELIGIBLE_COUNT = 3;
 
 type BoardReview = {
   readonly body: string;
-  // 온체인에서 읽히는 작성자 키(hex). unsafe 기준선에서만 존재한다.
-  readonly authorHex?: string;
+  // 온체인에서 읽히는 공개 admin 값(hex). unsafe 기준선에서만 존재한다.
+  readonly adminHex?: string;
 };
 
 type AuthorNote = {
@@ -46,7 +46,6 @@ type BoardProps = {
   messageTone?: MessageTone;
   reviews: readonly BoardReview[];
   authorNote: AuthorNote;
-  anonymitySet?: string;
   transaction?: PublicTransactionRecord & {
     readonly elapsedSeconds: string;
   };
@@ -59,7 +58,6 @@ const BlindBoard = ({
   messageTone,
   reviews,
   authorNote,
-  anonymitySet,
   transaction,
 }: BoardProps) => (
   <section className="compare-board" aria-label={`${title} 블라인드 게시판`}>
@@ -71,7 +69,6 @@ const BlindBoard = ({
       >
         {authorNote.text}
       </p>
-      {anonymitySet && <p className="compare-anon-set">{anonymitySet}</p>}
     </header>
     <div className="compare-review-list" aria-live="polite">
       {reviews.length === 0 ? (
@@ -80,9 +77,9 @@ const BlindBoard = ({
         reviews.map((review, index) => (
           <article className="compare-review" key={`${index}-${review.body}`}>
             <p className="compare-review-body">{review.body}</p>
-            {review.authorHex && (
+            {review.adminHex && (
               <p className="compare-review-author exposed">
-                작성자 {review.authorHex.slice(0, 8)}… · 온체인에서 읽힘
+                admin {review.adminHex.slice(0, 8)}… · 온체인에서 읽힘
               </p>
             )}
           </article>
@@ -97,10 +94,6 @@ const BlindBoard = ({
     {transaction && (
       <dl className="compare-transaction">
         <div>
-          <dt>거래 ID</dt>
-          <dd>{transaction.txId}</dd>
-        </div>
-        <div>
           <dt>확정 블록</dt>
           <dd>{transaction.blockHeight}</dd>
         </div>
@@ -112,9 +105,6 @@ const BlindBoard = ({
     )}
   </section>
 );
-
-const shortHex = (value: Uint8Array): string =>
-  `${Array.from(value.slice(0, 4), (byte) => byte.toString(16).padStart(2, "0")).join("")}…`;
 
 // 회로 assert 원문에서 사유만 뽑는다. 없으면 원문을 자른다 — 지어내지 않는다.
 const assertReason = (error: unknown): string => {
@@ -304,24 +294,20 @@ export const ComparisonDemo = () => {
   // 계약을 로컬에서 실행해 얻은 것이다 — Preprod 거래가 아니라는 표기를 유지한다.
   const traceUnsafe = (
     runId: string,
-    outcome:
-      | { readonly kind: "posted"; readonly ms: number }
-      | { readonly kind: "blocked" },
+    outcome: { readonly kind: "posted" } | { readonly kind: "blocked" },
   ) => {
     const group = "ownPublicKey · 로컬 시뮬레이터";
     if (outcome.kind === "blocked") {
       appendToRun(runId, {
         id: "unsafe-auth",
-        label: "ownPublicKey 대조",
-        scope: "simulator",
+        label: "공개 admin 값 대조",
         status: "failed",
-        detail: "호출자 ≠ admin",
+        detail: "현재 값 ≠ 공개 admin",
         group,
       });
       appendToRun(runId, {
         id: "unsafe-post",
         label: "게시",
-        scope: "simulator",
         status: "skipped",
         detail: "차단됨",
         group,
@@ -330,27 +316,30 @@ export const ComparisonDemo = () => {
     }
     appendToRun(runId, {
       id: "unsafe-auth",
-      label: "ownPublicKey 대조",
-      scope: "simulator",
+      label: "공개 admin 값 대조",
       status: "done",
-      detail: `admin ${unsafeSession.exposedAuthorHex().slice(0, 8)}… · 호출자 일치`,
+      detail: "현재 값 = 공개 admin",
+      group,
+    });
+    appendToRun(runId, {
+      id: "unsafe-ownership",
+      label: "키 소유권 검증",
+      status: "skipped",
+      detail: "검증 없음",
       group,
     });
     appendToRun(runId, {
       id: "unsafe-dup",
       label: "중복 확인",
-      scope: "simulator",
       status: "skipped",
-      detail: "이 계약에는 중복 검사가 없음",
+      detail: "검사 없음",
       group,
     });
     appendToRun(runId, {
       id: "unsafe-post",
       label: "게시",
-      scope: "simulator",
       status: "done",
-      detail: `reviews ${unsafeSession.reviewCount()}건`,
-      ms: outcome.ms,
+      detail: "로컬 반영",
       group,
     });
   };
@@ -387,42 +376,36 @@ export const ComparisonDemo = () => {
 
     // 파생과 그 값의 온체인 조회는 한 줄로 합친다. 따로 찍으면 회차마다 같은 줄이
     // 두 배로 쌓여 정작 판정("경로 있음/없음")이 묻힌다.
-    const keyStartedAt = performance.now();
     const reviewerKey = pureCircuits.deriveReviewerKey(secret);
-    const keyMs = performance.now() - keyStartedAt;
     publish({
       id: "eligibility",
       group: "Merkle · Preprod",
       label: "자격 확인",
-      scope: board ? "localLedger" : "local",
       status: "done",
-      detail: `reviewerKey ${shortHex(reviewerKey)} · ${
+      detail: `${
         board
           ? board.isEligible(reviewerKey)
-            ? "경로 있음"
-            : "경로 없음"
+            ? "자격 경로 있음"
+            : "자격 경로 없음"
           : "계약 상태 미수신"
       }`,
-      ms: keyMs,
     });
 
-    const nullifierStartedAt = performance.now();
-    const nullifier = pureCircuits.deriveNullifier(secret, appConfig.itemId);
-    const nullifierMs = performance.now() - nullifierStartedAt;
+    const nullifier = board
+      ? pureCircuits.deriveNullifier(secret, board.productId)
+      : undefined;
     publish({
       id: "duplicate",
       group: "Merkle · Preprod",
       label: "중복 확인",
-      scope: board ? "localLedger" : "local",
       status: "done",
-      detail: `nullifier ${shortHex(nullifier)} · ${
-        board
+      detail: `${
+        board && nullifier
           ? board.hasNullifier(nullifier)
             ? "이미 있음"
-            : "없음"
+            : "중복 없음"
           : "계약 상태 미수신"
       }`,
-      ms: nullifierMs,
     });
 
     const submitStartedAt = performance.now();
@@ -431,7 +414,6 @@ export const ComparisonDemo = () => {
       id: "submit",
       group: "Merkle · Preprod",
       label: "회로 실행 · 증명 · 서명 · 제출",
-      scope: "network",
       status: "running",
     });
 
@@ -446,7 +428,6 @@ export const ComparisonDemo = () => {
         id: "submit",
         group: "Merkle · Preprod",
         label: "회로 실행 · 증명 · 서명 · 제출",
-        scope: "network",
         status: "done",
         detail: `블록 ${finalized.blockHeight}`,
         ms: performance.now() - submitStartedAt,
@@ -456,7 +437,6 @@ export const ComparisonDemo = () => {
           id: "confirm",
           group: "Merkle · Preprod",
           label: "리뷰 반영",
-          scope: "ledger",
           status: "running",
           detail: "확인 중",
         });
@@ -467,7 +447,6 @@ export const ComparisonDemo = () => {
         id: "submit",
         group: "Merkle · Preprod",
         label: "회로 실행 · 증명 · 서명 · 제출",
-        scope: "network",
         status: "failed",
         detail: assertReason(error),
         ms: performance.now() - submitStartedAt,
@@ -476,7 +455,6 @@ export const ComparisonDemo = () => {
         id: "confirm",
         group: "Merkle · Preprod",
         label: "리뷰 반영",
-        scope: "ledger",
         status: "skipped",
         detail: "거래가 만들어지지 않음",
       });
@@ -484,11 +462,11 @@ export const ComparisonDemo = () => {
     }
   };
 
-  // 인가된 리뷰어(=admin) 본인이 게시한다. 작성자 공개키는 온체인에 남는다.
+  // admin과 같은 공개 컨텍스트 값으로 게시한다. 이 값은 키 소유권을 증명하지 않는다.
   const postUnsafe = (session: UnsafeComparisonSession, review: string) => {
     session.submit(review);
-    const authorHex = session.exposedAuthorHex();
-    setUnsafeReviews((prev) => [{ body: review, authorHex }, ...prev]);
+    const adminHex = session.exposedAdminHex();
+    setUnsafeReviews((prev) => [{ body: review, adminHex }, ...prev]);
   };
 
   const requireConfig = (): boolean => {
@@ -514,7 +492,6 @@ export const ComparisonDemo = () => {
         contractAddress: appConfig.contractAddress!,
         indexerUri: appConfig.indexerUri!,
         indexerWsUri: appConfig.indexerWsUri!,
-        itemId: appConfig.itemId,
       });
       sessionRef.current = session;
       await bindReviewer(session, activeUser.secret);
@@ -525,7 +502,7 @@ export const ComparisonDemo = () => {
     }
   };
 
-  // 자격자 익명 작성. Merkle: 작성자 미상으로 게시. unsafe: 작성자 키 노출.
+  // 자격자 익명 작성. Merkle은 작성자 정보가 없고, unsafe는 공개 admin 값을 남긴다.
   // 같은 자격자가 다시 누르면 Merkle는 nullifier로 중복 차단, unsafe는 재게시.
   const submitEligible = async () => {
     const review = body.trim();
@@ -549,15 +526,9 @@ export const ComparisonDemo = () => {
 
       if (outcome.ok) {
         const elapsedSeconds = ((Date.now() - startedAt) / 1_000).toFixed(1);
-        const unsafeStartedAt = performance.now();
         postUnsafe(unsafeSession, review);
-        traceUnsafe(outcome.runId, {
-          kind: "posted",
-          ms: performance.now() - unsafeStartedAt,
-        });
-        setUnsafeMessage(
-          "게시됨 · 작성자 공개키가 온체인에 남음 · 사용자 1·2·3 공통 신원",
-        );
+        traceUnsafe(outcome.runId, { kind: "posted" });
+        setUnsafeMessage("게시됨 · 작성자 키 노출");
         setMerkleMessage("Preprod 거래 확정");
         setMerkleTone("success");
         setTransaction({ ...outcome.finalized, elapsedSeconds });
@@ -566,19 +537,11 @@ export const ComparisonDemo = () => {
         if (result.kind === "duplicate") {
           // 같은 자격자의 재작성: Merkle는 nullifier로 차단, unsafe는 중복 방지가
           // 없어 같은 글을 다시 게시한다.
-          const unsafeStartedAt = performance.now();
           postUnsafe(unsafeSession, review);
-          traceUnsafe(outcome.runId, {
-            kind: "posted",
-            ms: performance.now() - unsafeStartedAt,
-          });
+          traceUnsafe(outcome.runId, { kind: "posted" });
           setUnsafeMessage("같은 사용자의 글이 재게시됨");
         } else if (result.kind === "ineligible") {
-          // 연결된 사용자가 배포된 자격 트리에 없다. unsafe에 게시하지 않는다.
-          setUnsafeMessage(
-            "이 사용자가 배포된 자격 트리에 없습니다 · 계약 주소를 확인하세요",
-          );
-          setUnsafeTone("error");
+          setUnsafeMessage(undefined);
         }
         setMerkleMessage(result.message);
         setMerkleTone("error");
@@ -608,8 +571,8 @@ export const ComparisonDemo = () => {
     }
   };
 
-  // 미등록 리뷰어 경로. Merkle: 트리에 없는 일회성 난수 비밀키라 Preprod 거래 차단.
-  // unsafe: 자격을 익명으로 표현하지 못하므로, 게시하려면 새 작성자 신원을 온체인에 노출한다.
+  // 미등록 리뷰어 경로. Merkle은 트리에 없는 일회성 난수 비밀키를 차단한다.
+  // unsafe 쪽은 다른 공개 컨텍스트 값으로 비교 실패를 보여줄 뿐, 소유권은 검증하지 않는다.
   const submitUnregistered = async () => {
     const review = body.trim();
     const session = sessionRef.current;
@@ -646,19 +609,15 @@ export const ComparisonDemo = () => {
       }
       setMerkleTone("error");
 
-      // ownPublicKey 기준선도 등록되지 않은 호출자를 막는다(assert ownPublicKey()==admin).
-      // 즉 미등록 사용자는 두 계약 모두에서 게시되지 않는다. 다만 unsafe는 공개된
-      // admin 키와 대조해 막고, Merkle은 아무 신원도 드러내지 않고 막는다.
-      const unsafeStartedAt = performance.now();
+      // ownPublicKey 기준선은 다른 공개 값을 막지만 키 소유권은 검증하지 않는다.
       const unsafeError = unsafeSession.attemptOutsider(review);
-      const unsafeMs = performance.now() - unsafeStartedAt;
       traceUnsafe(
         outcome.runId,
-        unsafeError ? { kind: "blocked" } : { kind: "posted", ms: unsafeMs },
+        unsafeError ? { kind: "blocked" } : { kind: "posted" },
       );
       setUnsafeMessage(
         unsafeError
-          ? "차단됨 · 공개 admin 키와 대조"
+          ? "차단됨 · 공개 admin 값 불일치"
           : "예상과 달리 통과됨 — 기준선을 확인하세요",
       );
       setUnsafeTone("error");
@@ -740,7 +699,7 @@ export const ComparisonDemo = () => {
   return (
     <main className="compare-page" data-testid="access-control-comparison">
       <header className="compare-hero">
-        <p className="compare-product">무선 이어폰 XR-200 · Preprod</p>
+        <p className="compare-product">{appConfig.productName} · Preprod</p>
         <h1>블라인드 리뷰</h1>
         <div
           className="compare-users"
@@ -767,16 +726,6 @@ export const ComparisonDemo = () => {
             <dt>현재 사용자</dt>
             <dd>
               {activeUser.label} · {reviewerStatus}
-            </dd>
-          </div>
-          <div>
-            <dt>활성 자격키</dt>
-            <dd>{activeUser.reviewerKeyHex.slice(0, 16)}…</dd>
-          </div>
-          <div>
-            <dt>계약 주소</dt>
-            <dd>
-              {appConfig.contractAddress ?? "배포된 계약 주소가 필요합니다"}
             </dd>
           </div>
         </dl>
@@ -837,7 +786,7 @@ export const ComparisonDemo = () => {
             onClick={resetLocalResult}
             type="button"
           >
-            로컬 결과만 초기화
+            초기화
           </button>
         </div>
         {connectionError && <p className="form-error">{connectionError}</p>}
@@ -851,7 +800,7 @@ export const ComparisonDemo = () => {
           messageTone={unsafeTone}
           reviews={unsafeReviews}
           authorNote={{
-            text: "작성자 공개 — 온체인 admin 키에 기록됨",
+            text: "공개 admin 값 노출 · 키 소유권 미검증",
             exposed: true,
           }}
         />
@@ -862,10 +811,9 @@ export const ComparisonDemo = () => {
           messageTone={merkleTone}
           reviews={merkleReviews.map((review) => ({ body: review }))}
           authorNote={{
-            text: "작성자 미상 — 온체인에 없음",
+            text: `작성자 정보 없음 · 익명 집합 k=${ELIGIBLE_COUNT}`,
             exposed: false,
           }}
-          anonymitySet={`자격자 ${ELIGIBLE_COUNT}명 · 온체인에 작성자 없음 (k=${ELIGIBLE_COUNT})`}
           transaction={transaction}
         />
         <ProofTrace

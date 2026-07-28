@@ -539,13 +539,6 @@ textarea:disabled {
   overflow-wrap: anywhere;
 }
 
-.trace-note {
-  margin: 8px 0 0;
-  color: #a0a0a0;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
 .compare-board-header h2 {
   margin: 8px 0 0;
   font-size: 15px;
@@ -566,13 +559,6 @@ textarea:disabled {
 
 .compare-author-note.hidden {
   color: #2f6f5e;
-}
-
-.compare-anon-set {
-  margin: 0;
-  color: #6b6b6b;
-  font-size: 13px;
-  line-height: 1.5;
 }
 
 .compare-review-list {

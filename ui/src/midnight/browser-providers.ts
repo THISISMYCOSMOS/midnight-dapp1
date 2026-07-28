@@ -36,18 +36,19 @@ import type { ReviewPrivateState } from "@midnight-review/contract";
 // 화면에 그대로 띄우기 위한 표식이다(AGENTS.md §2.6: 내부 에러 문자열 노출 금지).
 export class WalletSetupError extends Error {}
 
-export type BrowserConnectionConfig = {
+type BrowserNetworkConfig = {
   readonly networkId: string;
-  readonly contractAddress: ContractAddress;
   readonly indexerUri: string;
   readonly indexerWsUri: string;
-  readonly itemId: Uint8Array;
 };
 
-export type BrowserDeploymentConfig = Omit<
-  BrowserConnectionConfig,
-  "contractAddress"
->;
+export type BrowserConnectionConfig = BrowserNetworkConfig & {
+  readonly contractAddress: ContractAddress;
+};
+
+export type BrowserDeploymentConfig = BrowserNetworkConfig & {
+  readonly itemId: Uint8Array;
+};
 
 export type PreprodWalletCheck = {
   readonly networkId: string;
@@ -68,7 +69,7 @@ const preprodIndexerUri =
 const preprodIndexerWsUri =
   "wss://indexer.preprod.midnight.network/api/v4/graphql/ws";
 
-const assertPreprodRequest = (config: BrowserDeploymentConfig): void => {
+const assertPreprodRequest = (config: BrowserNetworkConfig): void => {
   if (config.networkId !== "preprod") {
     throw new WalletSetupError("발표용 MVP는 Preprod 네트워크만 사용할 수 있습니다");
   }
@@ -194,7 +195,7 @@ type ReviewWalletContext = {
 // 지갑을 한 번 연결한다. 이 결과(connectedApi)를 재사용하면 사용자 전환 때
 // Lace 승인을 다시 받지 않아도 된다.
 const connectReviewWallet = async (
-  config: BrowserDeploymentConfig,
+  config: BrowserNetworkConfig,
 ): Promise<ReviewWalletContext> => {
   assertPreprodRequest(config);
   const connectedApi = await connectToWallet(config.networkId);
@@ -207,7 +208,7 @@ const connectReviewWallet = async (
 // join 때마다 새 provider를 만든다 — 리뷰어마다 private state를 격리하기 위해서다.
 // 지갑 연결은 재사용하므로 Lace 팝업은 다시 뜨지 않는다.
 const buildReviewProviders = (
-  config: BrowserDeploymentConfig,
+  config: BrowserNetworkConfig,
   wallet: ReviewWalletContext,
 ): ReviewProviders => {
   const zkConfigProvider = new FetchZkConfigProvider<ReviewCircuitKeys>(
@@ -263,12 +264,12 @@ const buildReviewProviders = (
 };
 
 const connectReviewProviders = async (
-  config: BrowserDeploymentConfig,
+  config: BrowserNetworkConfig,
 ): Promise<ReviewProviders> =>
   buildReviewProviders(config, await connectReviewWallet(config));
 
 export const inspectPreprodWallet = async (
-  config: BrowserDeploymentConfig,
+  config: BrowserNetworkConfig,
 ): Promise<PreprodWalletCheck> => {
   assertPreprodRequest(config);
   const connectedApi = await connectToWallet(config.networkId);
@@ -293,7 +294,6 @@ export const connectReviewApi = async (
     providers,
     config.contractAddress,
     secretKey,
-    config.itemId,
   );
 };
 
@@ -313,7 +313,6 @@ export const connectReviewSession = async (
         buildReviewProviders(config, wallet),
         config.contractAddress,
         secretKey,
-        config.itemId,
       ),
   };
 };

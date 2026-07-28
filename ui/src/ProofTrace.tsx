@@ -3,29 +3,18 @@
 // 제출 한 번이 어떤 단계를 지나는지 쌓아 보여주는 로그. 원칙은 하나다:
 // **실제로 관측한 값만 찍는다.**
 //
-//   local   — 이 브라우저에서 그 함수를 실제로 실행하고 시간을 잰 값
-//   ledger  — 마지막으로 수신한 계약 공개 상태를 조회한 값
-//   network — 회로 실행·증명·서명·제출을 한 덩어리로 호출한 실측 시간
-//
 // 회로 내부(제약 평가 순서, 증명 생성만의 소요)는 클라이언트에서 관측할 수 없다.
-// 그래서 쪼개지 않고 한 단계로 두며, 화면에도 그렇게 적는다. 관측하지 못한 것을
-// 그럴듯한 로그 문자열로 지어내지 않는다.
+// 그래서 회로 실행·증명·서명·제출을 한 단계로 두고 전체 소요 시간만 표시한다.
+// 관측하지 못한 것을 그럴듯한 로그 문자열로 지어내지 않는다.
 //
 // 배치: 제출 회차는 최신이 위. 회차 안의 단계는 시간 순 — 인과가 거꾸로 읽히면
 // "왜 막혔는지"를 보여준다는 목적이 사라지기 때문이다.
 
-export type TraceScope =
-  | "local"
-  | "ledger"
-  | "network"
-  | "localLedger"
-  | "simulator";
 export type TraceStatus = "running" | "done" | "failed" | "skipped";
 
 export type TraceStep = {
   readonly id: string;
   readonly label: string;
-  readonly scope: TraceScope;
   readonly status: TraceStatus;
   readonly detail?: string;
   readonly ms?: number;
@@ -38,14 +27,6 @@ export type TraceRun = {
   readonly startedAt: number;
   readonly label: string;
   readonly steps: readonly TraceStep[];
-};
-
-const scopeText: Record<TraceScope, string> = {
-  local: "브라우저에서 계산",
-  ledger: "리뷰 읽기",
-  network: "네트워크",
-  localLedger: "브라우저에서 계산 · 계약과 대조",
-  simulator: "로컬 시뮬레이터",
 };
 
 const statusText: Record<TraceStatus, string> = {
@@ -102,7 +83,6 @@ export const ProofTrace = ({
                   </div>
                   <p className="trace-meta">
                     {[
-                      scopeText[step.scope],
                       step.detail,
                       step.status === "running" && runningMs !== undefined
                         ? formatMs(runningMs)

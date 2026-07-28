@@ -15,28 +15,28 @@ import {
 
 type UnsafePrivateState = Record<string, never>;
 
-// ownPublicKey 비교 기준선(unsafe-review.compact)을 정직하게 구동한다.
-// 인가된 리뷰어의 공개키가 생성 시 admin 슬롯에 기록되고, 호출자는 그 리뷰어 본인이다.
-// 여기에는 admin 키를 다른 호출자에 복사하는 "도용"이 없다 — 요점은 오직 "작성자
-// 신원이 공개 원장에 남는다"이며, 그래서 익명·자격을 동시에 표현하지 못한다는 것이다.
+// ownPublicKey 비교 기준선(unsafe-review.compact)을 그대로 구동한다.
+// 공개 컨텍스트 값이 생성 시 admin 슬롯에 기록되고, 제출 때 같은 종류의 값을 비교한다.
+// 이 비교는 호출자가 해당 키를 소유했다는 사실을 증명하지 않으므로 최종 인가 계약으로
+// 사용하면 안 된다. admin 값이 공개 원장에 남는다는 점도 함께 관측한다.
 export class UnsafeReviewSimulator {
   readonly contract: Contract<UnsafePrivateState>;
   circuitContext: CircuitContext<UnsafePrivateState>;
 
-  constructor(authorIdentity: Uint8Array) {
+  constructor(adminValue: Uint8Array) {
     this.contract = new Contract<UnsafePrivateState>({});
 
     const { currentContractState, currentPrivateState } =
       this.contract.initialState(
         createConstructorContext<UnsafePrivateState>(
           {},
-          { bytes: authorIdentity },
+          { bytes: adminValue },
         ),
       );
 
     this.circuitContext = createCircuitContext(
       sampleContractAddress(),
-      emptyZswapLocalState({ bytes: authorIdentity }),
+      emptyZswapLocalState({ bytes: adminValue }),
       currentContractState,
       currentPrivateState,
     );
@@ -46,8 +46,8 @@ export class UnsafeReviewSimulator {
     return ledger(this.circuitContext.currentQueryContext.state);
   }
 
-  // 공개 원장(admin 슬롯)이 그대로 노출하는 작성자 공개키.
-  exposedAuthorKey(): Uint8Array {
+  // 공개 원장(admin 슬롯)에 저장된 비교값.
+  exposedAdminValue(): Uint8Array {
     return this.getLedger().admin.bytes;
   }
 

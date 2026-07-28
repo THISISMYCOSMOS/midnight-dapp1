@@ -52,13 +52,6 @@
       "proof": true,
       "arguments": [
         {
-          "name": "itemId",
-          "type": {
-            "type-name": "Bytes",
-            "length": 32
-          }
-        },
-        {
           "name": "body",
           "type": {
             "type-name": "Opaque",
@@ -158,8 +151,18 @@
       }
     },
     {
-      "name": "nullifiers",
+      "name": "productId",
       "index": 1,
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "nullifiers",
+      "index": 2,
       "exported": true,
       "storage": "Set",
       "type": {
@@ -169,7 +172,7 @@
     },
     {
       "name": "reviews",
-      "index": 2,
+      "index": 3,
       "exported": true,
       "storage": "List",
       "type": {

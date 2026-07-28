@@ -11,6 +11,6 @@ constructor() {
 }
 
 export circuit submitReview(body: Opaque<"string">): [] {
-  assert(ownPublicKey() == admin, "Only the registered reviewer can submit");
+  assert(ownPublicKey() == admin, "Public key value does not match admin");
   reviews.pushFront(disclose(body));
 }

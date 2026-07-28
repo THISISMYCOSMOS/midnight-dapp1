@@ -67,6 +67,8 @@ const prepareWalletOnly = process.argv.includes("--prepare-wallet-only");
 const operatorSeedFile = join(operatorDataRoot, "preprod-wallet.seed");
 const deploymentFile = join(projectRoot, "deployment", "preprod.json");
 const uiEnvironmentFile = join(projectRoot, "ui", ".env.local");
+const productId = new Uint8Array(32);
+productId.set(new TextEncoder().encode("midnight-review:item:xr-200:v1"));
 
 const loadReviewerKeys = async (): Promise<
   [Uint8Array, Uint8Array, Uint8Array]
@@ -178,7 +180,7 @@ try {
       compiledContract: ReviewContract,
       privateStateId: reviewPrivateStateKey,
       initialPrivateState: createReviewPrivateState(randomBytes(32)),
-      args: [reviewerKeys],
+      args: [reviewerKeys, productId],
     });
 
     const publicData = deployed.deployTxData.public;
@@ -188,6 +190,7 @@ try {
       txHash: publicData.txHash,
       blockHeight: publicData.blockHeight.toString(),
       reviewerKeys: reviewerKeys.map((key) => Buffer.from(key).toString("hex")),
+      productId: Buffer.from(productId).toString("hex"),
       indexer: preprodEnvironment.indexer,
       indexerWS: preprodEnvironment.indexerWS,
       proofServer: preprodEnvironment.proofServer,
@@ -202,7 +205,7 @@ try {
         `VITE_CONTRACT_ADDRESS=${result.contractAddress}`,
         `VITE_INDEXER_URI=${result.indexer}`,
         `VITE_INDEXER_WS_URI=${result.indexerWS}`,
-        "VITE_PRODUCT_ID_HEX=",
+        `VITE_PRODUCT_ID_HEX=${result.productId}`,
         "VITE_PRODUCT_NAME=무선 이어폰 XR-200",
         "",
       ].join("\n"),
