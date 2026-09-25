@@ -259,6 +259,7 @@ CLI에서 웹으로 변경 확정(2026-07-22). 근거: 증명 생성 대기는 C
 | `reviewer-tools/` | 리뷰어 로컬 비밀키/공개키 CLI. 운영자는 실행하지 않음 | 리뷰어 | 🟨 저장소 내부 경로 거부 확인, 실제 리뷰어 실행 미검증 |
 | `cli/` | 운영자 배포 폴백. 리뷰어 공개키만 입력 | 실행 | 🟨 타입·빌드 통과, Preprod 지갑 상태 스트림 0건 타임아웃 |
 | `docker-compose.yml` | 로컬 proof server 8.1.0. 노드·인덱서는 공식 Preprod 원격 서비스 사용 | 실행 | ✅ TCP 6300·HTTP 200 |
+| `video/zk-intro/` | 입문자용 3분 설명 영상(ZK·Midnight·익명 후기 예시). 대본 `script.json` → 오프라인 TTS(`build_audio.py`) → HTML 장면 프레임 캡처(`render.py`). mp4·모델·폰트는 커밋하지 않음 | 설계 | 🟨 렌더·자막·ASR 검증, 합성 음성 품질은 사람 귀로 미검수 |
 | `slides/` | 발표 자료 | 설계 | ⬜ |
 | `docs/research-r2.md` | 원문 인용·근거 보관 | 설계 | ⬜ |
 

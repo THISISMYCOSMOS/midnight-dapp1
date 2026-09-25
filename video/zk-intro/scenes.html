@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>ZK Midnight Intro</title>
+<style>
+@font-face { font-family: P; src: url(fonts/Pretendard-Regular.woff2) format("woff2"); font-weight: 400; }
+@font-face { font-family: P; src: url(fonts/Pretendard-Medium.woff2) format("woff2"); font-weight: 500; }
+@font-face { font-family: P; src: url(fonts/Pretendard-SemiBold.woff2) format("woff2"); font-weight: 600; }
+@font-face { font-family: P; src: url(fonts/Pretendard-Bold.woff2) format("woff2"); font-weight: 700; }
+
+/* docs/mockup.html과 같은 팔레트: 무채색 5 + 유채색 1 */
+:root {
+  --bg: #FFFFFF; --ink: #1A1A1A; --sub: #6B6B6B; --mute: #A0A0A0; --line: #E5E5E5;
+  --acc: #2F6F5E; --acc-t: #EAF1EE;
+}
+html, body { margin: 0; background: var(--bg); }
+#stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg);
+  font-family: P, sans-serif; color: var(--ink); font-weight: 400; word-break: keep-all; }
+.scene { position: absolute; inset: 0; opacity: 0; }
+.a { position: absolute; }
+/* 타이포 5단계 · 간격 8/16/32/64 */
+.t96 { font-size: 96px; font-weight: 700; letter-spacing: -2px; line-height: 1.15; }
+.t56 { font-size: 56px; font-weight: 700; letter-spacing: -1px; line-height: 1.2; }
+.t36 { font-size: 36px; line-height: 1.35; }
+.t28 { font-size: 28px; line-height: 1.4; }
+.t22 { font-size: 22px; line-height: 1.4; color: var(--sub); }
+.w6 { font-weight: 600; } .w5 { font-weight: 500; }
+.sub { color: var(--sub); } .mute { color: var(--mute); } .acc { color: var(--acc); }
+.box { border: 2px solid var(--ink); border-radius: 8px; box-sizing: border-box; background: var(--bg); }
+.lbox { border: 2px solid var(--line); border-radius: 8px; box-sizing: border-box; background: var(--bg); }
+.chip { display: inline-block; padding: 8px 16px; border: 2px solid var(--ink); border-radius: 999px; font-size: 28px; font-weight: 600; }
+.chip.acc { border-color: var(--acc); color: var(--acc); }
+.mono { font-family: "DejaVu Sans Mono", P, monospace; }
+.ic { display: inline-block; vertical-align: -0.12em; width: 1em; height: 1em; }
+.row { display: flex; align-items: center; gap: 16px; }
+.center { display: flex; align-items: center; justify-content: center; text-align: center; }
+
+#label { position: absolute; left: 96px; top: 56px; font-size: 22px; color: var(--sub); opacity: 0; }
+#label b { color: var(--acc); font-weight: 600; margin-right: 16px; }
+#subline { position: absolute; left: 160px; right: 160px; top: 884px; height: 2px; background: var(--line); opacity: 0; }
+#sub { position: absolute; left: 160px; right: 160px; top: 900px; height: 150px; font-size: 36px; font-weight: 500;
+  line-height: 1.4; color: var(--ink); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="label"></div>
+  <div id="subline"></div>
+  <div id="sub" class="center"></div>
+</div>
+<script>
+// ───────────────────────── 공통 ─────────────────────────
+const CHECK = '<svg class="ic" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5L19.5 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CROSS = '<svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
+const person = (c = "#A0A0A0", w = 64) =>
+  `<svg width="${w}" height="${w}" viewBox="0 0 64 64"><circle cx="32" cy="20" r="12" fill="${c}"/><path d="M10 60c0-14 10-22 22-22s22 8 22 22z" fill="${c}"/></svg>`;
+const arrowR = (w, c = "#1A1A1A") =>
+  `<svg width="${w}" height="24" viewBox="0 0 ${w} 24"><path d="M0 12H${w - 4}M${w - 16} 3l12 9-12 9" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const arrowD = (h, c = "#A0A0A0") =>
+  `<svg width="24" height="${h}" viewBox="0 0 24 ${h}"><path d="M12 0V${h - 4}M3 ${h - 16}l9 12 9-12" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+const cl = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const ez = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const P = (t, s, d = .6) => ez(cl((t - s) / d));
+// 등장: 투명도 + 아래에서 살짝
+function show(e, t, s, d = .6, dy = 16) {
+  const p = P(t, s, d);
+  e.style.opacity = p;
+  e.style.transform = `translateY(${(1 - p) * dy}px)`;
+  return p;
+}
+// 등장 후 퇴장
+function span(e, t, s, out, d = .5, dy = 16) {
+  const p = P(t, s, d) * (1 - P(t, out, d));
+  e.style.opacity = p;
+  e.style.transform = `translateY(${(1 - P(t, s, d)) * dy}px)`;
+  return p;
+}
+function mk(root, cls, style, html) {
+  const e = document.createElement("div");
+  e.className = "a " + (cls || "");
+  e.setAttribute("style", style || "");
+  e.innerHTML = html || "";
+  root.appendChild(e);
+  e.style.opacity = 0;
+  return e;
+}
+// 문장 i의 시작 + 그 문장 길이의 f 비율 지점
+const at = (L, i, f = 0) => L[i].start + (L[i].end - L[i].start) * f;
+
+// 결정적 난수 (프레임마다 같은 그림)
+function rng(seed) { return () => (seed = (seed * 16807) % 2147483647) / 2147483647; }
+
+// ───────────────────────── 장면 ─────────────────────────
+const SCENES = {};
+
+SCENES.title = {
+  build(r) {
+    this.bar = mk(r, "", "left:160px;top:388px;width:64px;height:4px;background:var(--acc)");
+    this.h = mk(r, "t96", "left:160px;top:416px", TIMELINE.title);
+    this.s = mk(r, "t36 sub", "left:160px;top:548px", TIMELINE.subtitle);
+  },
+  update(t) { show(this.bar, t, .1); show(this.h, t, .25); show(this.s, t, .55); },
+};
+
+SCENES.hook = {
+  build(r) {
+    this.pw = mk(r, "", "left:300px;top:320px;width:600px", `
+      <div class="t28 sub">비밀번호</div>
+      <div class="box row" style="height:104px;margin-top:16px;padding:0 32px">${
+        Array.from({ length: 8 }, (_, i) => `<span class="dot" style="width:24px;height:24px;border-radius:50%;background:var(--ink);opacity:0"></span>`).join("")}</div>
+      <div class="t22" style="margin-top:16px">내용은 보여주지 않는다</div>`);
+    this.dots = [...this.pw.querySelectorAll(".dot")];
+    this.ar = mk(r, "", "left:940px;top:410px", arrowR(160));
+    this.ok = mk(r, "", "left:1140px;top:320px;width:480px", `
+      <div class="t28 sub">확인하는 쪽</div>
+      <div class="row" style="height:104px;margin-top:16px;padding:0 32px;border:2px solid var(--acc);border-radius:8px;background:var(--acc-t)">
+        <span class="t36 w6 acc">${CHECK}</span><span class="t36 w6 acc">알고 있다</span></div>
+      <div class="t22" style="margin-top:16px">안다는 사실만 확인한다</div>`);
+    this.c1 = mk(r, "chip", "left:640px;top:640px", "영지식 증명");
+    this.c2 = mk(r, "chip acc", "left:1000px;top:640px", "미드나잇");
+  },
+  update(t, L) {
+    show(this.pw, t, L[0].start - .3);
+    this.dots.forEach((d, i) => d.style.opacity = P(t, L[0].start + .2 + i * .18, .15));
+    show(this.ar, t, at(L, 0, .55), .5, 0);
+    show(this.ok, t, at(L, 0, .7));
+    show(this.c1, t, at(L, 1, .35));
+    show(this.c2, t, at(L, 1, .6));
+  },
+};
+
+SCENES.idcard = {
+  build(r) {
+    const rows = [["이름", "김민준"], ["생년월일", "2001. 03. 14"], ["주소", "서울특별시 ○○구 ○○로 12"], ["번호", "010314 - 3******"]];
+    this.card = mk(r, "box", "left:160px;top:190px;width:780px;height:440px;border-radius:16px", `
+      <div class="t28 w6" style="position:absolute;left:32px;top:24px">신분증</div>
+      <div style="position:absolute;left:32px;right:32px;top:80px;height:2px;background:var(--line)"></div>
+      <div style="position:absolute;left:32px;top:120px;width:160px;height:200px;background:var(--line);border-radius:8px;overflow:hidden" class="center">${person("#A0A0A0", 120)}</div>
+      ${rows.map(([k, v], i) => `
+        <div class="hl" style="position:absolute;left:216px;right:24px;top:${112 + i * 72}px;height:60px;border-radius:8px;background:var(--acc-t);opacity:0"></div>
+        <div class="row" style="position:absolute;left:232px;top:${112 + i * 72}px;height:60px">
+          <span class="t22" style="width:112px">${k}</span><span class="t28 w5">${v}</span></div>`).join("")}`);
+    this.hls = [...this.card.querySelectorAll(".hl")];
+    this.q = mk(r, "", "left:1100px;top:190px;width:660px", `
+      <div class="t28 sub">점원이 알고 싶은 것</div>
+      <div class="t56" style="margin-top:16px">성인인가요?</div>
+      <div class="row" style="margin-top:32px"><span class="chip acc">예</span><span class="chip" style="border-color:var(--line);color:var(--mute)">아니오</span></div>`);
+    this.cmp = mk(r, "", "left:160px;top:688px;width:1600px", `
+      <div class="row" style="height:64px"><span class="t28 sub" style="width:240px">필요한 정보</span>
+        <span style="width:48px;height:48px;background:var(--acc);border-radius:4px"></span><span class="t36 w6 acc" style="margin-left:16px">1개</span></div>
+      <div class="row" style="height:64px;margin-top:8px"><span class="t28 sub" style="width:240px">보여주는 정보</span>
+        ${Array.from({ length: 4 }, (_, i) => `<span class="sq" style="width:48px;height:48px;background:var(--ink);border-radius:4px;opacity:.12"></span>`).join("")}
+        <span class="t36 w6 n" style="margin-left:16px">4개</span></div>`);
+    this.sqs = [...this.cmp.querySelectorAll(".sq")];
+    this.n = this.cmp.querySelector(".n");
+  },
+  update(t, L) {
+    show(this.card, t, L[0].start - .3, .7, 40);
+    show(this.q, t, at(L, 1, .05));
+    this.hls.forEach((h, i) => h.style.opacity = P(t, at(L, 2, .25 + i * .16), .35));
+    show(this.cmp, t, at(L, 2, .15));
+    this.sqs.forEach((s, i) => s.style.opacity = .12 + .88 * P(t, at(L, 2, .25 + i * .16), .35));
+    this.n.style.opacity = P(t, at(L, 2, .85), .4);
+  },
+};
+
+SCENES.waldo = {
+  build(r) {
+    const W = 1100, H = 640, wx = 812, wy = 250, rand = rng(7);
+    const grays = ["#A0A0A0", "#6B6B6B", "#C4C4C4", "#8A8A8A", "#B5B5B5", "#7A7A7A"];
+    let figs = "";
+    for (let gy = 0; gy < 12; gy++) for (let gx = 0; gx < 22; gx++) {
+      const x = 30 + gx * 49 + (rand() - .5) * 22, y = 34 + gy * 52 + (rand() - .5) * 18;
+      if (Math.hypot(x - wx, y - wy) < 64) continue;
+      const c = grays[Math.floor(rand() * grays.length)], c2 = grays[Math.floor(rand() * grays.length)];
+      figs += `<circle cx="${x}" cy="${y - 12}" r="8" fill="${c}"/><rect x="${x - 9}" y="${y - 2}" width="18" height="22" rx="5" fill="${c2}"/>`;
+    }
+    const waldo = `<g transform="translate(${wx},${wy})">
+      <rect x="-8" y="-27" width="16" height="7" rx="2" fill="#2F6F5E"/><circle cx="0" cy="-12" r="8" fill="#6B6B6B"/>
+      <rect x="-10" y="-2" width="20" height="24" rx="5" fill="#FFFFFF" stroke="#2F6F5E" stroke-width="2"/>
+      <rect x="-10" y="4" width="20" height="4" fill="#2F6F5E"/><rect x="-10" y="12" width="20" height="4" fill="#2F6F5E"/></g>`;
+    this.pic = mk(r, "", `left:120px;top:170px;width:${W}px;height:${H}px`,
+      `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect x="1" y="1" width="${W - 2}" height="${H - 2}" rx="8" fill="#FFFFFF" stroke="#E5E5E5" stroke-width="2"/>${figs}${waldo}</svg>`);
+    this.cap = mk(r, "t22", "left:120px;top:130px", "그림 어딘가에 월리가 있다");
+    this.me = mk(r, "", "left:1320px;top:250px;width:480px", `<div class="row">${person("#2F6F5E", 56)}<span class="t22">나</span></div>
+      <div class="t36 w6" style="margin-top:8px">찾았어.</div>`);
+    this.fr = mk(r, "", "left:1320px;top:450px;width:480px", `<div class="row">${person("#A0A0A0", 56)}<span class="t22">친구</span></div>
+      <div class="t36 w6" style="margin-top:8px">정말? 증명해 봐.</div>`);
+    // 손가락 대신 화살표: 오른쪽에서 월리를 가리킴
+    this.pt = mk(r, "", `left:${120 + wx + 36}px;top:${170 + wy - 12}px`, `<div class="row">
+      <svg width="240" height="24" viewBox="0 0 240 24"><path d="M236 12H6M18 3L6 12l12 9" fill="none" stroke="#1A1A1A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="t28 w6">여기!</span></div>`);
+    this.bad = mk(r, "t28 w6", "left:1320px;top:650px;width:480px", `<span class="row">${CROSS}<span>위치까지 알려준 셈</span></span>`);
+    // 그림보다 훨씬 큰 종이. 구멍은 월리 위에만
+    const hx = 120 + wx, hy = 170 + wy - 2;
+    this.sheet = mk(r, "", "left:0;top:0;width:1920px;height:1080px", `<svg width="1920" height="1080" viewBox="0 0 1920 1080">
+      <defs><mask id="hole"><rect x="0" y="0" width="1920" height="1080" fill="#fff"/><circle cx="${hx}" cy="${hy}" r="44" fill="#000"/></mask></defs>
+      <rect x="40" y="112" width="1840" height="752" rx="8" fill="#1A1A1A" mask="url(#hole)"/>
+      <circle cx="${hx}" cy="${hy}" r="46" fill="none" stroke="#2F6F5E" stroke-width="4"/></svg>`);
+    this.s1 = mk(r, "t28 w6", "left:160px;top:640px;color:#FFFFFF", `<span class="row"><span style="color:#8FC0B0">${CHECK}</span>보이는 것 · 월리가 있다</span>`);
+    this.s2 = mk(r, "t28", "left:160px;top:704px;color:#A0A0A0", `<span class="row">${CROSS}보이지 않는 것 · 그림 속 위치</span>`);
+  },
+  update(t, L) {
+    show(this.pic, t, L[0].start - .3, .7, 0);
+    show(this.cap, t, at(L, 1, .2));
+    span(this.me, t, at(L, 2, .0), at(L, 4, 0));
+    span(this.fr, t, at(L, 2, .5), at(L, 4, 0));
+    span(this.pt, t, at(L, 3, .3), at(L, 4, 0), .4, 0);
+    span(this.bad, t, at(L, 3, .6), at(L, 4, 0));
+    const p = P(t, at(L, 4, .3), 1.1);
+    this.sheet.style.opacity = p > 0 ? 1 : 0;
+    this.sheet.style.transform = `translateY(${(p - 1) * 1000}px)`;
+    show(this.s1, t, at(L, 5, .15));
+    show(this.s2, t, at(L, 5, .5));
+  },
+};
+
+SCENES.define = {
+  build(r) {
+    this.h = mk(r, "", "left:160px;top:160px", `<div class="t56">영지식 증명</div><div class="t28 mute" style="margin-top:8px">Zero-Knowledge Proof</div>`);
+    this.pv = mk(r, "box center", "left:160px;top:370px;width:400px;height:136px;flex-direction:column",
+      `<div class="t36 w6">증명하는 사람</div><div class="t22">비밀을 알고 있다</div>`);
+    this.vf = mk(r, "box center", "left:1360px;top:370px;width:400px;height:136px;flex-direction:column",
+      `<div class="t36 w6">확인하는 사람</div><div class="t22">결과만 받는다</div>`);
+    this.ar = mk(r, "", "left:600px;top:426px", arrowR(720, "#2F6F5E"));
+    this.yes = mk(r, "t36 w6 acc center", "left:600px;top:360px;width:720px", `<span class="row">${CHECK}<span>“참이다”</span></span>`);
+    this.no = mk(r, "t28 mute center", "left:600px;top:470px;width:720px", `<span class="row">${CROSS}<span style="text-decoration:line-through">비밀 내용</span><span class="t22">전달되지 않음</span></span>`);
+    const rows = [["참이면", "통과한다", "완전성"], ["거짓이면", "속일 수 없다", "건전성"], ["비밀은", "새지 않는다", "영지식성"]];
+    this.rows = rows.map(([a, b, c], i) => mk(r, "row", `left:160px;top:${604 + i * 80}px;width:1600px;height:64px;border-top:2px solid var(--line)`,
+      `<span class="t28 sub" style="width:200px">${a}</span><span class="t36 w6" style="width:400px">${b}</span><span class="t22">${c}</span>`));
+  },
+  update(t, L) {
+    show(this.h, t, L[0].start - .3);
+    show(this.pv, t, at(L, 1, .0));
+    show(this.vf, t, at(L, 1, .1));
+    show(this.ar, t, at(L, 1, .2), .5, 0);
+    show(this.yes, t, at(L, 1, .3));
+    show(this.no, t, at(L, 1, .65));
+    this.rows.forEach((e, i) => show(e, t, at(L, 2, [0, .33, .66][i])));
+  },
+};
+
+SCENES.ledger = {
+  build(r) {
+    this.h = mk(r, "", "left:160px;top:160px", `<div class="t56">블록체인</div>`);
+    this.hs = mk(r, "t28 sub", "left:160px;top:240px", "모두가 함께 보는 유리 장부");
+    const data = [["#1041", "민준 → 서연", "09:12", "30 토큰 송금"], ["#1042", "서연 → 가게", "09:15", "12 토큰 결제"],
+      ["#1043", "지훈 → 민준", "09:21", "5 토큰 송금"], ["#1044", "가게 → 도윤", "09:30", "환불"],
+      ["#1045", "도윤 → 서연", "09:34", "8 토큰 송금"], ["#1046", "민준 → 병원", "09:40", "진료비 결제"]];
+    const X = [32, 176, 456, 640], Wc = [120, 260, 160, 300];
+    this.cols = [1, 2, 3].map(c => `<div class="colhl" style="position:absolute;left:${X[c] - 16}px;width:${Wc[c] + 16}px;top:16px;bottom:16px;background:var(--acc-t);border-radius:8px;opacity:0"></div>`);
+    this.tbl = mk(r, "lbox", "left:160px;top:320px;width:1000px;height:520px;overflow:hidden", `
+      ${this.cols.join("")}
+      <div style="position:absolute;left:0;right:0;top:24px;height:48px">${["블록", "누가", "언제", "무엇을"].map((k, i) =>
+        `<span class="t22 hd" style="position:absolute;left:${X[i]}px">${k}</span>`).join("")}</div>
+      ${data.map((d, j) => `<div class="dr" style="position:absolute;left:0;right:0;top:${80 + j * 70}px;height:62px;border-top:2px solid var(--line);opacity:0">
+        ${d.map((v, i) => `<span class="${i ? "t28 w5" : "t28 mute"}" style="position:absolute;left:${X[i]}px;top:12px">${v}</span>`).join("")}</div>`).join("")}`);
+    this.hls = [...this.tbl.querySelectorAll(".colhl")];
+    this.drs = [...this.tbl.querySelectorAll(".dr")];
+    this.eyes = mk(r, "", "left:1260px;top:340px;width:500px", `<div class="row" style="gap:8px">${Array.from({ length: 6 }, () => person("#A0A0A0", 64)).join("")}</div>
+      <div class="t22" style="margin-top:16px">누구나 열람할 수 있다</div>`);
+    this.b1 = mk(r, "t36 w6 acc", "left:1260px;top:560px", `<span class="row">${CHECK}<span>몰래 고칠 수 없다</span></span>`);
+    this.b2 = mk(r, "t36 w6", "left:1260px;top:640px", `<span class="row">${CROSS}<span>숨길 수도 없다</span></span>`);
+  },
+  update(t, L) {
+    show(this.h, t, L[0].start - .3);
+    show(this.hs, t, at(L, 1, .1));
+    show(this.tbl, t, at(L, 1, .0), .6, 24);
+    this.drs.forEach((d, i) => d.style.opacity = P(t, at(L, 1, .15 + i * .1), .35));
+    show(this.eyes, t, at(L, 1, .6));
+    show(this.b1, t, at(L, 2, .1));
+    show(this.b2, t, at(L, 2, .6));
+    this.hls.forEach((h, i) => h.style.opacity = P(t, at(L, 3, [0, .25, .5][i]), .3) * .999);
+  },
+};
+
+SCENES.midnight = {
+  build(r) {
+    this.h = mk(r, "", "left:160px;top:140px", `<div class="t56">미드나잇</div><div class="t28 mute" style="margin-top:8px">Midnight · 공개 장부 + 영지식 증명</div>`);
+    this.l = mk(r, "box", "left:160px;top:320px;width:620px;height:320px", `
+      <div class="row" style="position:absolute;left:32px;top:24px"><span class="t28 w6">내 컴퓨터</span><span class="t22">비밀 데이터</span></div>
+      <div class="row" style="position:absolute;left:32px;top:104px"><span class="t22" style="width:120px">생년월일</span><span class="t28 w5">2001. 03. 14</span></div>
+      <div class="row" style="position:absolute;left:32px;top:168px"><span class="t22" style="width:120px">비밀키</span><span class="t28 w5">● ● ● ● ● ● ● ●</span></div>
+      <div class="stay t22" style="position:absolute;left:32px;top:248px;opacity:0"><span class="row" style="gap:8px">${CROSS}<span>밖으로 나가지 않음</span></span></div>`);
+    this.stay = this.l.querySelector(".stay");
+    this.rbox = mk(r, "lbox", "left:1140px;top:320px;width:620px;height:320px", `
+      <div class="row" style="position:absolute;left:32px;top:24px"><span class="t28 w6">공개 장부</span><span class="t22">모두가 본다</span></div>
+      ${[0, 1].map(i => `<div style="position:absolute;left:32px;right:32px;top:${96 + i * 56}px;height:40px;background:var(--line);border-radius:4px"></div>`).join("")}
+      <div class="slot" style="position:absolute;left:32px;right:32px;top:208px;height:80px;border:2px dashed var(--line);border-radius:8px"></div>`);
+    this.gear = mk(r, "center", "left:800px;top:420px;width:320px;height:120px;flex-direction:column",
+      `<div class="t28 w6 acc">증명 만들기</div><div class="t22">내 컴퓨터 안에서</div>`);
+    this.tok = mk(r, "center", "left:0;top:0;width:200px;height:64px;background:var(--acc);border-radius:8px;color:#fff",
+      `<span class="t28 w6">증명</span>`);
+    this.ok = mk(r, "t28 w6 acc", "left:1420px;top:536px", `<span class="row">${CHECK}<span>확인됨 · 참</span></span>`);
+    this.nosee = mk(r, "t22", "left:1140px;top:664px;width:620px", `<span class="row" style="gap:8px">${CROSS}<span>비밀 원본은 체인에 없다</span></span>`);
+    this.code = mk(r, "lbox", "left:160px;top:700px;width:1600px;height:164px;padding:24px 32px", `
+      ${[["ledger  reviews: List&lt;Opaque&lt;\"string\"&gt;&gt;;", "공개 장부"],
+         ["witness localSecretKey(): Bytes&lt;32&gt;;", "내 컴퓨터에만"],
+         ["circuit submitReview(itemId, body) { … }", "증명으로 검사"]].map(([c, d]) =>
+        `<div class="row" style="height:40px"><span class="mono" style="font-size:26px;width:1000px">${c}</span><span class="t22">${d}</span></div>`).join("")}
+      <div class="t22 mute" style="position:absolute;right:32px;top:16px">Compact</div>`);
+  },
+  update(t, L) {
+    show(this.h, t, L[0].start - .3);
+    const fadeBoxes = P(t, at(L, 4, 0), .5);
+    show(this.l, t, at(L, 1, .35));
+    show(this.rbox, t, at(L, 1, .0));
+    show(this.gear, t, at(L, 2, .1));
+    // 증명 토큰: 가운데에서 태어나 공개 장부 빈칸으로
+    const born = P(t, at(L, 2, .35), .4), fly = P(t, at(L, 2, .6), 1.0);
+    const x0 = 860, y0 = 350, x1 = 1172, y1 = 536;
+    this.tok.style.opacity = born;
+    this.tok.style.transform = `translate(${x0 + (x1 - x0) * fly}px, ${y0 + (y1 - y0) * fly}px)`;
+    this.stay.style.opacity = P(t, at(L, 2, .7), .4);
+    show(this.ok, t, at(L, 3, .05));
+    show(this.nosee, t, at(L, 3, .55));
+    this.nosee.style.opacity = +this.nosee.style.opacity * (1 - fadeBoxes);
+    show(this.code, t, at(L, 4, .1));
+  },
+};
+
+SCENES.board = {
+  build(r) {
+    // ── A: 게시판과 세 조건
+    this.A = mk(r, "", "left:0;top:0;width:1920px;height:1080px");
+    this.A.style.opacity = 1;
+    this.bd = mk(this.A, "lbox", "left:160px;top:170px;width:720px;height:640px", `
+      <div style="position:absolute;left:32px;top:24px" class="t22">상품 후기</div>
+      <div style="position:absolute;left:32px;top:56px" class="t36 w6">무선 이어폰</div>
+      ${[["배송이 빠르고 포장이 꼼꼼해요.", 150], ["노이즈 캔슬링이 기대 이상입니다.", 330]].map(([s, y]) => `
+        <div style="position:absolute;left:32px;right:32px;top:${y}px;height:148px;border-top:2px solid var(--line)">
+          <div class="t28 w5" style="margin-top:24px">${s}</div>
+          <div class="t22" style="margin-top:16px">작성자 · 표시 없음</div></div>`).join("")}`);
+    const conds = ["구매자만 쓸 수 있다", "누가 썼는지 운영자도 모른다", "상품마다 한 번만"];
+    this.conds = conds.map((c, i) => mk(this.A, "row", `left:1000px;top:${190 + i * 88}px;width:760px;height:72px;border-bottom:2px solid var(--line)`,
+      `<span class="t28 w6 acc" style="width:48px">${i + 1}</span><span class="t36 w5 ct">${c}</span><span class="t28 w6 x" style="margin-left:auto;opacity:0">${CROSS}</span>`));
+    this.login = mk(this.A, "", "left:1000px;top:500px;width:760px", `
+      <div class="t22">보통의 방법 · 로그인</div>
+      <div class="row" style="margin-top:16px"><span class="box t28 w5" style="padding:16px 24px">로그인 · 김민준</span>${arrowR(80)}
+        <span class="lbox t28 w5" style="padding:16px 24px">운영자 화면 · 작성자 김민준</span></div>`);
+    // ── B: 도장과 머클 트리
+    this.B = mk(r, "", "left:0;top:0;width:1920px;height:1080px");
+    const LX = [300, 660, 1020, 1380], LW = 240, stamps = ["7f3a…", "c19e…", "4b02…"];
+    this.buyers = [0, 1, 2].map(i => mk(this.B, "center", `left:${LX[i]}px;top:170px;width:${LW}px;flex-direction:column`,
+      `${person("#6B6B6B", 72)}<div class="t22">구매자 ${i + 1}</div>`));
+    this.kd = [0, 1, 2].map(i => mk(this.B, "center", `left:${LX[i]}px;top:296px;width:${LW}px;flex-direction:column;gap:8px`,
+      `<span class="t22">비밀키</span>${arrowD(260)}`));
+    this.leaves = [0, 1, 2, 3].map(i => mk(this.B, "center", `left:${LX[i]}px;top:620px;width:${LW}px;height:80px;border-radius:8px;` +
+      (i < 3 ? "border:2px solid var(--ink)" : "border:2px dashed var(--mute)"),
+      i < 3 ? `<span class="t28 w6 mono">${stamps[i]}</span>` : `<span class="t22">빈 자리</span>`));
+    this.stampLbl = mk(this.B, "t22", "left:1680px;top:644px", "도장");
+    const n1x = [480, 1200], cx = (LX[0] + LW / 2 + LX[1] + LW / 2) / 2;
+    const lines = `<svg width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute;left:0;top:0">
+      ${[0, 1].map(k => `<path class="e1" d="M${LX[2 * k] + LW / 2} 620 L${n1x[k] + 60} 520 M${LX[2 * k + 1] + LW / 2} 620 L${n1x[k] + 60} 520" stroke="#A0A0A0" stroke-width="3" fill="none"/>`).join("")}
+      <path class="e2" d="M${n1x[0] + 60} 440 L960 336 M${n1x[1] + 60} 440 L960 336" stroke="#A0A0A0" stroke-width="3" fill="none"/></svg>`;
+    this.e1 = mk(this.B, "", "left:0;top:0", lines);
+    this.n1 = n1x.map((x, k) => mk(this.B, "center lbox", `left:${x}px;top:440px;width:120px;height:80px`, `<span class="t22 mono">${["a81d…", "f40c…"][k]}</span>`));
+    this.root = mk(this.B, "center", "left:840px;top:236px;width:240px;height:100px;border-radius:8px;background:var(--acc);color:#fff;flex-direction:column",
+      `<span class="t22" style="color:#DDEBE6">뿌리 값</span><span class="t28 w6 mono">9d4e…</span>`);
+    this.rootLbl = mk(this.B, "t22", "left:1110px;top:268px", "체인에 공개");
+    this.brk = mk(this.B, "", "left:300px;top:720px;width:1320px", `
+      <svg width="1320" height="32" viewBox="0 0 1320 32"><path d="M2 2v14h1316V2M660 16v14" stroke="#2F6F5E" stroke-width="3" fill="none"/></svg>
+      <div class="t28 w6 acc center" style="margin-top:4px">이 중 하나에 내 도장이 있다 · 어느 것인지는 비공개</div>`);
+    this.rootOk = mk(this.B, "t28 w6 acc", "left:1110px;top:228px", `<span class="row">${CHECK}<span>일치</span></span>`);
+    // ── C: 상품별 두 번째 도장
+    this.C = mk(r, "", "left:0;top:0;width:1920px;height:1080px");
+    this.cHead = mk(this.C, "", "left:160px;top:170px", `<div class="t22">상품마다 달라지는 두 번째 도장</div>`);
+    this.cRows = [["상품 A", "e81c…"], ["상품 B", "2a77…"], ["상품 A · 다시", "e81c…"]].map(([p, s], i) =>
+      mk(this.C, "row", `left:160px;top:${250 + i * 120}px;height:96px`,
+        `<span class="t28 w5" style="width:200px">${p}</span>${arrowR(80, "#A0A0A0")}<span class="box t28 w6 mono" style="padding:16px 24px">${s}</span>`));
+    this.used = mk(this.C, "lbox", "left:1100px;top:250px;width:660px;height:420px", `
+      <div class="t22" style="position:absolute;left:32px;top:24px">사용된 도장 목록 · 공개</div>
+      ${["e81c…", "2a77…"].map((s, i) => `<div class="u${i} row" style="position:absolute;left:32px;right:32px;top:${80 + i * 80}px;height:64px;border-top:2px solid var(--line);opacity:0">
+        <span class="t28 w6 mono">${s}</span><span class="t22" style="margin-left:auto">${["상품 A 후기 1건", "상품 B 후기 1건"][i]}</span></div>`).join("")}
+      <div class="dup row" style="position:absolute;left:32px;right:32px;top:280px;height:96px;opacity:0;border:2px solid var(--ink);border-radius:8px;padding:0 24px">
+        <span class="t28 w6">${CROSS}</span><span class="t28 w6">이미 쓴 도장 · 중복으로 차단</span></div>`);
+    this.u = [this.used.querySelector(".u0"), this.used.querySelector(".u1")];
+    this.dup = this.used.querySelector(".dup");
+  },
+  update(t, L) {
+    // A
+    const aOut = at(L, 3, 0) - .1;
+    this.A.style.opacity = 1 - P(t, aOut, .5);
+    show(this.bd, t, L[0].start - .3);
+    this.conds.forEach((c, i) => show(c, t, at(L, 1, [.1, .35, .7][i])));
+    show(this.login, t, at(L, 2, .05));
+    const broken = P(t, at(L, 2, .55), .4);
+    const c2 = this.conds[1];
+    c2.querySelector(".x").style.opacity = broken;
+    c2.querySelector(".ct").style.textDecoration = broken > .5 ? "line-through" : "none";
+    c2.querySelector(".ct").style.color = broken > .5 ? "var(--mute)" : "var(--ink)";
+    // B
+    const bIn = at(L, 3, 0) + .3, bOut = at(L, 6, 0) - .1;
+    this.B.style.opacity = P(t, bIn, .5) * (1 - P(t, bOut, .5));
+    const buyerOut = at(L, 4, .05);
+    this.buyers.forEach((b, i) => { show(b, t, bIn + i * .25); b.style.opacity *= 1 - P(t, buyerOut, .5); });
+    this.kd.forEach((k, i) => { show(k, t, at(L, 3, .2) + i * .25); k.style.opacity *= 1 - P(t, buyerOut, .5); });
+    this.leaves.forEach((l, i) => show(l, t, i < 3 ? at(L, 3, .3) + i * .25 : at(L, 4, .1)));
+    show(this.stampLbl, t, at(L, 3, .5));
+    const e1 = P(t, at(L, 4, .2), .6), e2 = P(t, at(L, 4, .45), .6);
+    this.e1.style.opacity = 1;
+    this.e1.querySelectorAll(".e1").forEach(p => p.style.opacity = e1);
+    this.e1.querySelectorAll(".e2").forEach(p => p.style.opacity = e2);
+    this.n1.forEach(n => show(n, t, at(L, 4, .3)));
+    show(this.root, t, at(L, 4, .55));
+    show(this.rootLbl, t, at(L, 4, .75));
+    this.rootLbl.style.opacity *= 1 - P(t, at(L, 5, .5), .4);
+    show(this.brk, t, at(L, 5, .1));
+    show(this.rootOk, t, at(L, 5, .55));
+    // C
+    this.C.style.opacity = P(t, at(L, 6, 0) + .3, .5);
+    show(this.cHead, t, at(L, 6, 0) + .3);
+    show(this.cRows[0], t, at(L, 6, .08));
+    show(this.used, t, at(L, 6, .08));
+    this.u[0].style.opacity = P(t, at(L, 6, .2), .4);
+    show(this.cRows[1], t, at(L, 6, .28));
+    this.u[1].style.opacity = P(t, at(L, 6, .4), .4);
+    show(this.cRows[2], t, at(L, 6, .6));
+    this.dup.style.opacity = P(t, at(L, 6, .78), .4);
+  },
+};
+
+SCENES.wrap = {
+  build(r) {
+    this.W = mk(r, "", "left:0;top:0;width:1920px;height:1080px");
+    this.W.style.opacity = 1;
+    this.k1 = mk(this.W, "", "left:160px;top:190px;width:760px", `<div class="t28 sub">공개하는 것</div><div class="t96 acc" style="margin-top:8px">증명</div>`);
+    this.k2 = mk(this.W, "", "left:1000px;top:190px;width:760px", `<div class="t28 sub">내 손에 두는 것</div><div class="t96" style="margin-top:8px">비밀</div>`);
+    this.cv = mk(this.W, "", "left:160px;top:520px;width:1600px", `
+      <div class="t22">한계</div>
+      ${["증명을 만드는 데 시간이 걸린다", "수수료를 낸 지갑처럼, 계약 밖의 기록은 따로 따져봐야 한다"].map(s =>
+        `<div class="row" style="height:72px;border-top:2px solid var(--line);margin-top:16px"><span class="t28 mute">—</span><span class="t36 w5">${s}</span></div>`).join("")}`);
+    this.tag = mk(r, "", "left:160px;top:330px;width:1600px", `
+      <div class="t56">누가 썼는지는 아무도 모르지만,</div><div class="t56 acc" style="margin-top:16px">아무나 쓸 수는 없다.</div>`);
+    this.end = mk(r, "t22", "left:160px;top:560px", "영지식 증명 · 미드나잇");
+  },
+  update(t, L) {
+    show(this.k1, t, L[0].start - .2);
+    show(this.k2, t, at(L, 0, .45));
+    show(this.cv, t, at(L, 1, .1));
+    this.W.style.opacity = 1 - P(t, at(L, 2, 0) - .1, .5);
+    show(this.tag, t, at(L, 2, .05));
+    show(this.end, t, L[2].end + .4);
+  },
+};
+
+// ───────────────────────── 타임라인 ─────────────────────────
+const stage = document.getElementById("stage");
+const subEl = document.getElementById("sub"), subLine = document.getElementById("subline"), labelEl = document.getElementById("label");
+const order = [{ id: "title", label: "", start: 0, lines: [] }, ...TIMELINE.scenes];
+const allLines = TIMELINE.scenes.flatMap(s => s.lines);
+order.forEach(s => {
+  const root = document.createElement("section");
+  root.className = "scene";
+  stage.insertBefore(root, subLine);
+  s.root = root;
+  SCENES[s.id].build(root);
+});
+
+window.renderAt = function (t) {
+  const D = TIMELINE.duration;
+  order.forEach((s, i) => {
+    const A = i === 0 ? -1 : s.start - .5;
+    const B = i + 1 < order.length ? order[i + 1].start - .5 : D + 1;
+    const o = (i === 0 ? 1 : P(t, A, .45)) * (1 - P(t, B - .45, .45)) * (1 - P(t, D - .8, .7));
+    s.root.style.opacity = o;
+    s.root.style.visibility = o > 0.001 ? "visible" : "hidden";
+    if (o > 0.001) SCENES[s.id].update(t, s.lines, s);
+  });
+  // 장면 라벨
+  const idx = TIMELINE.scenes.findIndex((s, i) => t >= s.start - .5 && (i + 1 === TIMELINE.scenes.length || t < TIMELINE.scenes[i + 1].start - .5));
+  const lo = idx < 0 ? 0 : P(t, TIMELINE.scenes[0].start - .5, .5) * (1 - P(t, D - .8, .7));
+  labelEl.style.opacity = lo;
+  if (idx >= 0) labelEl.innerHTML = `<b>${String(idx + 1).padStart(2, "0")}</b>${TIMELINE.scenes[idx].label}`;
+  // 자막
+  const line = allLines.find(l => t >= l.start - .15 && t <= l.end + .3);
+  subLine.style.opacity = lo;
+  if (line) {
+    if (subEl.textContent !== line.text) subEl.textContent = line.text;
+    subEl.style.opacity = P(t, line.start - .15, .15) * (1 - P(t, line.end + .15, .15));
+  } else subEl.style.opacity = 0;
+};
+window.renderAt(0);
+</script>
+</body>
+</html>
