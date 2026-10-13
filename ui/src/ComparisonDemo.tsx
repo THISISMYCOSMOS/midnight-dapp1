@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { pureCircuits } from "@midnight-review/contract";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Subscription } from "rxjs";
 import { ProofTrace, type TraceRun, type TraceStep } from "./ProofTrace";
 import { UnsafeComparisonSession } from "./comparison-simulators";
 import { appConfig } from "./config";
-import { demoUsers } from "./demo-users";
+import { getDemoUsers } from "./demo-users";
 import {
   WalletSetupError,
   connectReviewSession,
@@ -23,10 +23,6 @@ import {
 
 type WalletStatus = "disconnected" | "connecting" | "connected";
 type MessageTone = "success" | "error";
-
-// 데모 자격자 수. constructor의 Vector<3>와 배포 설정에 맞춘 상수다.
-// 설계상 트리 깊이 10 → 자격자 최대 1024명, 발표 데모는 3명으로 k=3.
-const ELIGIBLE_COUNT = 3;
 
 type BoardReview = {
   readonly body: string;
@@ -146,6 +142,9 @@ const connectionMessage = (error: unknown): string =>
     : "Preprod 계약에 연결하지 못했습니다 · 계약 주소와 네트워크를 확인하세요";
 
 export const ComparisonDemo = () => {
+  // 이 화면은 데모 리뷰어 비밀키가 있어야 동작한다. 모듈 최상위가 아니라 여기서
+  // 부르므로, 이 화면을 열지 않는 다른 경로(`/deploy` 등)에는 비밀키가 만들어지지 않는다.
+  const demoUsers = useMemo(() => getDemoUsers(), []);
   const [unsafeSession, setUnsafeSession] = useState(
     () => new UnsafeComparisonSession(),
   );
@@ -169,6 +168,9 @@ export const ComparisonDemo = () => {
   // 아니라 계약이 진실이므로 공개 상태에서 직접 읽는다. undefined = 아직 못 읽음.
   const [demoKeysEligible, setDemoKeysEligible] =
     useState<readonly boolean[]>();
+  // 익명 집합 k. 상수가 아니라 이 계약의 자격 트리에서 읽은 값이다. `?contract=`로
+  // 다른 계약을 열면 자격자 수가 다르므로, 상수로 박으면 화면이 거짓 주장을 하게 된다.
+  const [eligibleCount, setEligibleCount] = useState<number>();
   const [submitting, setSubmitting] = useState(false);
   // 리뷰어 전환은 지갑 연결이 아니다. walletStatus를 건드리면 화면이 "지갑 연결 중"
   // 버튼으로 되돌아가 사용자가 Lace 재연결로 오해한다. 전환은 이 플래그로만 표시한다.
@@ -227,6 +229,7 @@ export const ComparisonDemo = () => {
         boardState.current = state;
         setMerkleReviews(state.reviews);
         setDemoKeysEligible(state.eligibleFlags);
+        setEligibleCount(state.eligibleCount);
         setLedgerFields(state.ledgerFields);
       },
       error: () =>
@@ -729,6 +732,13 @@ export const ComparisonDemo = () => {
             </dd>
           </div>
         </dl>
+        {appConfig.contractFromUrl && (
+          <p className="form-error" role="status">
+            기본 계약이 아닌 주소가 URL로 지정됐습니다 ·{" "}
+            {String(appConfig.contractAddress).slice(0, 16)}… · 제출하면 이 계약에
+            Lace 서명을 요청합니다
+          </p>
+        )}
         {demoKeyWarning && (
           <p className="form-error" role="status">
             {demoKeyWarning}
@@ -811,7 +821,11 @@ export const ComparisonDemo = () => {
           messageTone={merkleTone}
           reviews={merkleReviews.map((review) => ({ body: review }))}
           authorNote={{
-            text: `작성자 정보 없음 · 익명 집합 k=${ELIGIBLE_COUNT}`,
+            // k는 계약에서 읽은 자격자 수다. 아직 못 읽었으면 숫자를 지어내지 않는다.
+            text:
+              eligibleCount === undefined
+                ? "작성자 정보 없음 · 자격자 수 확인 중"
+                : `작성자 정보 없음 · 익명 집합 k=${eligibleCount}`,
             exposed: false,
           }}
           transaction={transaction}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { appConfig } from "./config";
-import { demoUsers } from "./demo-users";
+import { getDemoUsers } from "./demo-users";
 import {
   deployReviewApi,
   inspectPreprodWallet,
@@ -32,13 +32,16 @@ const messageFor = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
 export const OperatorDeployment = () => {
-  // 데모 편의: 세 자격키 입력을 데모 리뷰어 3명의 공개 파생키로 기본 채운다.
-  // (`/compare`의 사용자 1·2·3과 동일한 키. 값은 수정 가능.)
+  // 기본값은 비어 있다. 예전에는 데모 리뷰어 3명의 파생키로 채웠는데, 그 키의 비밀키는
+  // 운영자 브라우저 localStorage에서 생성된 것이라 운영자가 세 비밀키를 전부 갖게 됐다
+  // (§6.5 위반, 익명 집합이 사실상 k=1). 데모 키는 아래 버튼으로 명시적으로 채우고,
+  // 그때 대응 비밀키가 어디 있는지 경고를 띄운다.
   const [reviewerKeys, setReviewerKeys] = useState(() => [
-    initialReviewerKey() || demoUsers[0].reviewerKeyHex,
-    demoUsers[1].reviewerKeyHex,
-    demoUsers[2].reviewerKeyHex,
+    initialReviewerKey(),
+    "",
+    "",
   ]);
+  const [demoKeyWarning, setDemoKeyWarning] = useState<string>();
   const [checkingWallet, setCheckingWallet] = useState(false);
   const [walletCheck, setWalletCheck] = useState<PreprodWalletCheck>();
   const [testTokensConfirmed, setTestTokensConfirmed] = useState(false);
@@ -51,6 +54,18 @@ export const OperatorDeployment = () => {
   const updateKey = (index: number, value: string) => {
     setReviewerKeys((current) =>
       current.map((key, keyIndex) => (keyIndex === index ? value : key)),
+    );
+  };
+
+  // 데모 키를 명시적으로 채운다. 이 버튼을 누르기 전에는 비밀키가 만들어지지 않는다.
+  const fillDemoKeys = () => {
+    const users = getDemoUsers();
+    setReviewerKeys(users.map((user) => user.reviewerKeyHex));
+    const browserKeys = users.filter((user) => user.origin === "browser").length;
+    setDemoKeyWarning(
+      browserKeys > 0
+        ? `데모 키 ${browserKeys}개의 비밀키가 이 브라우저에만 있습니다 · 운영자가 비밀키를 알면 작성자를 특정할 수 있어 익명성이 성립하지 않습니다 (발표 녹화용으로만 쓰고, 실제 리뷰어 등록에는 쓰지 마세요)`
+        : "VITE_DEMO_SECRET_1·2·3에서 읽은 데모 키입니다 · 실제 리뷰어 등록에는 쓰지 마세요",
     );
   };
 
@@ -128,7 +143,8 @@ export const OperatorDeployment = () => {
         <p className="setup-eyebrow">운영자 설정</p>
         <h1>Lace로 리뷰 계약 배포</h1>
         <p className="setup-copy">
-          대응 비밀키가 있는 실제 리뷰어 공개키 3개. 난수 키는 쓰지 않습니다.
+          리뷰어가 자기 브라우저에서 만든 공개 reviewerKey 3개를 받아 넣습니다.
+          비밀키는 리뷰어 쪽에만 있어야 합니다.
         </p>
         <div className="setup-fields">
           {reviewerKeys.map((key, index) => (
@@ -144,6 +160,19 @@ export const OperatorDeployment = () => {
             </label>
           ))}
         </div>
+        <button
+          className="compare-reset"
+          disabled={deploying}
+          onClick={fillDemoKeys}
+          type="button"
+        >
+          데모 키로 채우기
+        </button>
+        {demoKeyWarning && (
+          <p className="form-error" role="status">
+            {demoKeyWarning}
+          </p>
+        )}
         <button
           className="button outline"
           disabled={checkingWallet || deploying}

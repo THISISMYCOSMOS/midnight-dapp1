@@ -47,6 +47,10 @@ export type ReviewPublicState = {
 export type ReviewBoardState = ReviewPublicState & {
   readonly productId: Uint8Array;
   readonly eligibleFlags: readonly boolean[];
+  // 이 계약의 자격 트리에 실제로 들어 있는 리프 수. `firstFree()`는 다음 빈 인덱스이며
+  // 삭제가 없는 append-only 트리이므로 삽입된 자격자 수와 같다. 화면의 익명 집합 k는
+  // 이 관측값을 쓴다 — 상수로 박으면 다른 계약을 열었을 때 화면이 거짓말을 한다.
+  readonly eligibleCount: number;
   readonly ledgerFields: readonly string[];
   readonly isEligible: (reviewerKey: Uint8Array) => boolean;
   readonly hasNullifier: (nullifier: Uint8Array) => boolean;
@@ -101,6 +105,7 @@ export const observeReviewState = (
         eligibleFlags: reviewerKeys.map(
           (key) => currentLedger.eligible.findPathForLeaf(key) !== undefined,
         ),
+        eligibleCount: Number(currentLedger.eligible.firstFree()),
         ledgerFields: Object.keys(currentLedger).sort(),
         isEligible: (key: Uint8Array) =>
           currentLedger.eligible.findPathForLeaf(key) !== undefined,

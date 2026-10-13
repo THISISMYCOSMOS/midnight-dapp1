@@ -8,6 +8,7 @@ import {
 } from "./browser-secret";
 import { appConfig } from "./config";
 import {
+  WalletSetupError,
   connectReviewApi,
   createPublicDataProvider,
 } from "./midnight/browser-providers";
@@ -20,18 +21,22 @@ import {
 type Screen = "list" | "write" | "submitting" | "success";
 type WalletStatus = "disconnected" | "connecting" | "connected";
 
-const messageFor = (error: unknown): string =>
-  error instanceof Error
-    ? error.message
-        .replace(
-          "Review already submitted for this item",
-          "이 상품에는 이미 리뷰를 남기셨습니다",
-        )
-        .replace(
-          "Reviewer is not eligible",
-          "리뷰는 구매 확인된 분만 쓸 수 있습니다",
-        )
-    : String(error);
+// 회로 assert 원문을 사용자 언어로 바꾼다. `.replace()` 체인이던 예전 구현은 아는
+// 문자열이 없으면 라이브러리 원문을 그대로 화면에 흘렸다(AGENTS.md §2.6 위반).
+// 모르는 오류는 원문 대신 일반 문구로 내보낸다. 단 WalletSetupError는 우리가 쓴,
+// 조치가 적힌 오류이므로 그대로 보여준다.
+const messageFor = (error: unknown): string => {
+  if (error instanceof WalletSetupError) return error.message;
+
+  const raw = error instanceof Error ? error.message : String(error);
+  if (raw.includes("Review already submitted for this item")) {
+    return "이 상품에는 이미 리뷰를 남기셨습니다";
+  }
+  if (raw.includes("Reviewer is not eligible")) {
+    return "리뷰는 구매 확인된 분만 쓸 수 있습니다";
+  }
+  return "요청을 처리하지 못했습니다 · 지갑과 네트워크 상태를 확인해 주세요";
+};
 
 export const App = () => {
   const [screen, setScreen] = useState<Screen>("list");

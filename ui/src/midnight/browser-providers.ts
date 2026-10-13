@@ -190,6 +190,9 @@ type ReviewWalletContext = {
   readonly addresses: Awaited<
     ReturnType<ConnectedAPI["getShieldedAddresses"]>
   >;
+  // 인덱서 연결은 리뷰어와 무관하므로 세션당 하나만 만든다. join마다 새로 만들면
+  // 사용자 전환·미등록 시도를 반복하는 동안 WebSocket이 정리되지 않고 쌓인다.
+  readonly publicDataProvider: ReturnType<typeof createPublicDataProvider>;
 };
 
 // 지갑을 한 번 연결한다. 이 결과(connectedApi)를 재사용하면 사용자 전환 때
@@ -202,13 +205,20 @@ const connectReviewWallet = async (
   const walletConfig = await connectedApi.getConfiguration();
   const proofServerUri = assertPreprodWallet(walletConfig);
   const addresses = await connectedApi.getShieldedAddresses();
-  return { connectedApi, proofServerUri, addresses };
+  return {
+    connectedApi,
+    proofServerUri,
+    addresses,
+    publicDataProvider: createPublicDataProvider(
+      config.indexerUri,
+      config.indexerWsUri,
+    ),
+  };
 };
 
-// join 때마다 새 provider를 만든다 — 리뷰어마다 private state를 격리하기 위해서다.
-// 지갑 연결은 재사용하므로 Lace 팝업은 다시 뜨지 않는다.
+// join 때마다 새 private state provider를 만든다 — 리뷰어마다 private state를 격리하기
+// 위해서다. 지갑 연결과 인덱서 연결은 재사용하므로 Lace 팝업도 WebSocket도 늘지 않는다.
 const buildReviewProviders = (
-  config: BrowserNetworkConfig,
   wallet: ReviewWalletContext,
 ): ReviewProviders => {
   const zkConfigProvider = new FetchZkConfigProvider<ReviewCircuitKeys>(
@@ -227,10 +237,7 @@ const buildReviewProviders = (
       wallet.proofServerUri,
       zkConfigProvider,
     ),
-    publicDataProvider: createPublicDataProvider(
-      config.indexerUri,
-      config.indexerWsUri,
-    ),
+    publicDataProvider: wallet.publicDataProvider,
     walletProvider: {
       getCoinPublicKey: () => wallet.addresses.shieldedCoinPublicKey,
       getEncryptionPublicKey: () =>
@@ -266,7 +273,7 @@ const buildReviewProviders = (
 const connectReviewProviders = async (
   config: BrowserNetworkConfig,
 ): Promise<ReviewProviders> =>
-  buildReviewProviders(config, await connectReviewWallet(config));
+  buildReviewProviders(await connectReviewWallet(config));
 
 export const inspectPreprodWallet = async (
   config: BrowserNetworkConfig,
@@ -310,7 +317,7 @@ export const connectReviewSession = async (
   return {
     join: (secretKey: Uint8Array) =>
       ReviewApi.join(
-        buildReviewProviders(config, wallet),
+        buildReviewProviders(wallet),
         config.contractAddress,
         secretKey,
       ),
